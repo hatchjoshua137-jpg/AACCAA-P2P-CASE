@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pathway to Prosperity Case Tool — AACCAA</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#24407E">
+<style>
+  :root{
+    --navy:#24407E; --navy-dark:#182c5a; --blue:#3155A1; --red:#C21E37; --blue-light:#EEF2FA;
+    --bg:#f4f6f9; --card:#ffffff; --line:#d9dfe7; --text:#1d2733; --muted:#5b6b7c;
+    --ok:#1a7f37; --warn:#b45309; --bad:#b3261e; --chip:#eef2f7;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Segoe UI",Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.45}
+  header.app{background:var(--navy);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  header.app .brand{font-size:19px;font-weight:700;letter-spacing:.2px}
+  header.app .sub{font-size:12.5px;opacity:.85}
+  header.app .spacer{flex:1}
+  header.app button{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:7px 14px;font-size:13.5px;cursor:pointer}
+  header.app button:hover{background:rgba(255,255,255,.22)}
+  header.app button.active{background:#fff;color:var(--navy);font-weight:600}
+  #userChip{font-size:13px;opacity:.9}
+  [hidden]{display:none !important}
+  main{max-width:1160px;margin:0 auto;padding:20px 18px 70px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+  .card h2{margin:0 0 4px;font-size:17px;color:var(--navy)}
+  .card h3{margin:16px 0 6px;font-size:14.5px;color:var(--navy);border-bottom:1px solid var(--line);padding-bottom:4px}
+  .card h4{margin:12px 0 4px;font-size:13px;color:var(--blue);letter-spacing:.06em;text-transform:uppercase}
+  .card .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .btn{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer;font-weight:600}
+  .btn:hover{filter:brightness(1.07)}
+  .btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  .btn.ghost{background:#fff;color:var(--muted);border:1px solid var(--line);font-weight:500}
+  .btn.danger{background:#fff;color:var(--bad);border:1px solid var(--bad);font-weight:500}
+  .btn.small{padding:5px 10px;font-size:12.5px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  input[type=text],input[type=date],input[type=number],input[type=tel],input[type=email],input[type=time],select,textarea{
+    width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:inherit;background:#fff;color:var(--text)}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--blue);outline-offset:0;border-color:var(--blue)}
+  textarea{min-height:56px;resize:vertical}
+  label.f{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:3px}
+  .grid{display:grid;gap:12px 16px}
+  .grid.c2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .grid.c3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .grid.c4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{background:var(--navy);color:#fff;text-align:left;padding:8px 10px;font-weight:600;font-size:12.5px;white-space:nowrap}
+  td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+  td input,td select,td textarea{font-size:13px;padding:5px 7px}
+  td textarea{min-height:40px}
+  .tablewrap{overflow-x:auto}
+  .chip{display:inline-block;background:var(--chip);border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:600;color:var(--muted);margin:1px 2px}
+  .chip.ok{background:#dcefe2;color:var(--ok)}
+  .chip.warn{background:#fdf0dd;color:var(--warn)}
+  .chip.info{background:var(--blue-light);color:var(--blue)}
+  .chip.bad{background:#fbe4e2;color:var(--bad)}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+  .tabs button{background:#fff;border:1px solid var(--line);border-bottom:3px solid transparent;border-radius:8px 8px 0 0;padding:8px 12px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:600}
+  .tabs button.active{color:var(--navy);border-bottom-color:var(--red);background:var(--card)}
+  .tabs button .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--line);margin-left:6px}
+  .tabs button .dot.done{background:var(--ok)}
+  .savebar{position:fixed;bottom:0;left:0;right:0;background:var(--navy-dark);color:#fff;padding:8px 22px;display:flex;gap:14px;align-items:center;font-size:13px;z-index:50}
+  .savebar .spacer{flex:1}
+  .banner{background:#fff7e6;border:1px solid #f3d9a4;color:#7a4b00;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13.5px}
+  .banner.bad{background:#fbe4e2;border-color:#e6a9a4;color:var(--bad)}
+  .callout{background:var(--blue-light);border:1px solid #c9d3ea;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:13.5px}
+  .empty{color:var(--muted);padding:26px;text-align:center;border:1px dashed var(--line);border-radius:8px}
+  .checks{display:flex;flex-wrap:wrap;gap:6px 16px}
+  .checks label{font-size:13.5px;display:flex;gap:6px;align-items:center}
+  .summary dt{font-weight:600;color:var(--muted);font-size:12.5px;margin-top:8px}
+  .summary dd{margin:2px 0 0}
+  .kv{display:grid;grid-template-columns:200px 1fr;gap:6px 12px;font-size:13.5px}
+  .kv b{color:var(--muted);font-weight:600}
+  .log{font-size:12.5px;color:var(--muted);max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fafbfc}
+  .overlay{position:fixed;inset:0;background:rgba(24,44,90,.93);color:#fff;display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .overlay[hidden]{display:none}
+  .overlay .box{background:#fff;color:var(--text);border-radius:12px;padding:28px 30px;max-width:460px;width:100%;text-align:center}
+  .overlay .box h2{color:var(--navy);margin:0 0 8px}
+  .overlay .err{color:var(--bad);font-size:13px;margin-top:10px}
+  .card.warnbox{border-left:5px solid var(--red)}
+  @media print{ header.app,.savebar,.tabs,.toolbar,button{display:none !important} .card{break-inside:avoid;border:none;padding:0 0 12px} main{max-width:none;padding:0} }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div>
+    <div class="brand">Pathway to Prosperity Case Tool</div>
+    <div class="sub">Anne Arundel County Community Action Agency · Diversion &amp; Reentry Services · GOCPP PJRA-2027-0025</div>
+  </div>
+  <div class="spacer"></div>
+  <span id="userChip" hidden></span>
+  <button id="navCases" class="active" onclick="showView('home')">Cases</button>
+  <button id="navHelp" onclick="showView('help')">Help</button>
+  <button id="signOutBtn" hidden onclick="signOut()">Sign out</button>
+</header>
+
+<div id="signinOverlay" class="overlay" hidden>
+  <div class="box">
+    <h2>Sign in to continue</h2>
+    <p>This tool holds confidential program records. Sign in with your AACCAA Microsoft 365 account. Access is by invitation only; contact the administrator if you are not assigned.</p>
+    <button class="btn" onclick="startSignIn()">Sign in with Microsoft</button>
+    <div id="signinErr" class="err"></div>
+  </div>
+</div>
+
+<main>
+  <!-- ============================== HOME ============================== -->
+  <section id="viewHome">
+    <div id="backupBanner" class="banner" hidden></div>
+    <div class="card">
+      <h2>Caseload</h2>
+      <p class="hint">Every case here is part of the authorized program record. Participant ID is the only identifier that leaves this tool; never put names in email, texts, or file names.</p>
+      <div class="toolbar">
+        <button class="btn" onclick="newCase()">+ New Case</button>
+        <input type="text" id="searchBox" placeholder="Search ID, name, staff…" style="max-width:280px" oninput="renderHome()">
+        <span class="spacer"></span>
+        <button id="backupBtn" class="btn secondary" onclick="connectBackupFolder()">Connect SharePoint backup folder…</button>
+        <button class="btn ghost" onclick="exportAllCasesJSON()">Backup all cases (JSON)</button>
+        <label class="btn ghost" style="margin:0">Load case file… <input type="file" accept=".json" hidden onchange="loadCaseFile(event)"></label>
+      </div>
+      <div id="caseTableWrap"></div>
+      <p class="hint" id="caseCount" style="margin-top:8px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Weekly export (Director or designee)</h2>
+      <p class="hint">Dashboard and outcome rows feed the P2P Caseload Dashboard on SharePoint and the quarterly GOCPP report. Exports include every case on this computer unless you tick specific cases in the list above.</p>
+      <div class="toolbar">
+        <button class="btn secondary" onclick="exportDashboard()">Caseload Dashboard rows</button>
+        <button class="btn secondary" onclick="exportOutcomes()">GOCPP Outcomes rows</button>
+        <button class="btn secondary" onclick="exportNotesCSV()">Progress Notes</button>
+        <button class="btn secondary" onclick="exportReferralsCSV()">Referrals</button>
+        <button class="btn secondary" onclick="exportCorrespondenceCSV()">Correspondence log</button>
+      </div>
+      <h3>Export for empowOR</h3>
+      <p class="hint">Import files match empowOR's sample layouts. <b>Import Households &amp; Participants first</b>, run Group Enrollment on that batch to enroll participants in "Pathway to Prosperity", then import Income, Case Notes, and Enrollment &amp; Services. IDs and the import source stay consistent across files.</p>
+      <div class="toolbar">
+        <button class="btn secondary" onclick="exportEmpowerHH()">1 · Households &amp; Participants</button>
+        <button class="btn secondary" onclick="exportEmpowerIncome()">2 · Income</button>
+        <button class="btn secondary" onclick="exportEmpowerNotes()">3 · Case Notes</button>
+        <button class="btn secondary" onclick="exportEmpowerEnroll()">4 · Enrollment &amp; Services</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== CASE ============================== -->
+  <section id="viewCase" hidden>
+    <div class="toolbar">
+      <button class="btn ghost" onclick="showView('home')">← All cases</button>
+      <span id="caseTitle" style="font-weight:700;color:var(--navy);font-size:16px"></span>
+      <span id="caseChips"></span>
+      <span class="spacer"></span>
+      <button class="btn ghost small" onclick="exportCaseJSON()">Save case file</button>
+      <button class="btn ghost small" onclick="printCase()">Print case summary</button>
+      <button class="btn ghost small" onclick="archiveCase()">Archive off this computer</button>
+      <button class="btn danger small" onclick="deleteCase()">Delete</button>
+    </div>
+    <div class="tabs" id="tabBar"></div>
+    <div id="tabBody"></div>
+  </section>
+
+  <!-- ============================== HELP ============================== -->
+  <section id="viewHelp" hidden>
+    <div class="card">
+      <h2>How this tool works</h2>
+      <p>Each tab follows the Pathway to Prosperity Operating Tools Packet. Everything saves as you type; there is no Save button. Green dots on the tabs show which parts are complete. Connect the SharePoint backup folder once on each laptop and every save is backed up automatically with version history.</p>
+      <h3>The rules the tool enforces</h3>
+      <ul>
+        <li>Initial contact is due within two business days of the enrollment inquiry. The case card turns amber when it is overdue.</li>
+        <li>A substantive contact is expected weekly. Seven or more days without a progress note flags the case.</li>
+        <li>Any letter, email, or report to the court, defense counsel, the State's Attorney, or a supervision agency is drafted here, sent to the CEASO for approval, and cannot be marked as sent until the disposition is Approved.</li>
+        <li>A correspondence request cannot be submitted to a recipient the participant's signed authorization does not cover.</li>
+        <li>Referrals are tracked to connection and outcome, not just issuance.</li>
+      </ul>
+      <h3>Confidentiality</h3>
+      <ul>
+        <li>Participant ID only in file names, emails, and texts. Names stay inside this tool and the paper record.</li>
+        <li>No Social Security numbers, account numbers, or card numbers anywhere in the system.</li>
+        <li>Behavioral health and substance use: record referral status and connection only, never clinical detail.</li>
+        <li>Court and case information carries its source. Public case information is verified, not assumed.</li>
+        <li>Lock your screen when you step away. Every action in a case is logged.</li>
+      </ul>
+      <h3>Boundaries (from the Operating Procedures)</h3>
+      <ul>
+        <li>Staff do not give legal advice, predict case outcomes, or advocate for a specific sentence. Progress summaries state facts and program participation.</li>
+        <li>Staff attend court only with supervisor approval and only for a defined purpose.</li>
+        <li>Nothing goes to any justice-system party without the participant's signed authorization and CEASO approval.</li>
+      </ul>
+      <p class="hint">Administrator: Joshua Hatch, Chief External Affairs and Strategy Officer.</p>
+    </div>
+  </section>
+</main>
+
+<div class="savebar">
+  <span id="saveStatus">Ready</span>
+  <span id="backupStatus"></span>
+  <span class="spacer"></span>
+  <span>Confidential program record · AACCAA</span>
+</div>
+
+<script>
+/* =====================================================================
+   Pathway to Prosperity Case Tool
+   Independent of the SDOH Assessment Tool: separate Entra app, separate
+   repository, separate SharePoint folder, separate storage keys.
+   No participant data ever touches the host; data lives on the staff
+   laptop and in the program's SharePoint folder only.
+   ===================================================================== */
+const STORE_KEY = 'aaccaa_p2p_cases_v1';
+const AUTH_KEY  = 'aaccaa_p2p_auth_v1';
+const CASE_FORMAT = 'aaccaa-p2p-case';
+
+/* ---------- Microsoft 365 sign-in (Entra ID, OAuth 2.0 code flow + PKCE) ----------
+   Register a NEW single-page application in Entra for this tool (see README).
+   Replace the three placeholders below with the values from that registration.
+   Local file:// copies run without sign-in for training and development. */
+const AUTH = {
+  clientId: 'REPLACE-WITH-P2P-APP-CLIENT-ID',
+  tenantId: '9096f1e3-6489-408c-8a44-c01f086cf2a1',
+  redirectUri: 'REPLACE-WITH-HOSTED-URL/',
+  enforceHosts: ['REPLACE-WITH-HOST'],
+  maxAgeDays: 7,
+};
+let currentUser = null;
+function authRequired(){ return AUTH.enforceHosts.includes(location.hostname); }
+function randChars(n){ const a=new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a,b=>'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[b%62]).join(''); }
+function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+async function startSignIn(){
+  const verifier=randChars(64), state=randChars(24);
+  sessionStorage.setItem('p2p_pkce',verifier); sessionStorage.setItem('p2p_state',state);
+  const challenge=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier)));
+  const p=new URLSearchParams({client_id:AUTH.clientId,response_type:'code',redirect_uri:AUTH.redirectUri,scope:'openid profile email',state,code_challenge:challenge,code_challenge_method:'S256',prompt:'select_account'});
+  location.href=`https://login.microsoftonline.com/${AUTH.tenantId}/oauth2/v2.0/authorize?`+p.toString();
+}
+async function completeSignIn(){
+  const q=new URLSearchParams(location.search); const code=q.get('code'); if(!code) return false;
+  const stateOk=q.get('state')===sessionStorage.getItem('p2p_state');
+  history.replaceState(null,'',location.pathname);
+  if(!stateOk) throw new Error('Sign-in state mismatch. Please try again.');
+  const body=new URLSearchParams({client_id:AUTH.clientId,grant_type:'authorization_code',code,redirect_uri:AUTH.redirectUri,code_verifier:sessionStorage.getItem('p2p_pkce')});
+  const r=await fetch(`https://login.microsoftonline.com/${AUTH.tenantId}/oauth2/v2.0/token`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+  const tok=await r.json();
+  if(!tok.id_token) throw new Error(tok.error_description||'Sign-in was not completed.');
+  const claims=JSON.parse(atob(tok.id_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+  const user={name:claims.name||claims.preferred_username||'Unknown user',email:claims.preferred_username||claims.email||'',oid:claims.oid||'',iat:Date.now()};
+  localStorage.setItem(AUTH_KEY,JSON.stringify(user)); currentUser=user; return true;
+}
+function loadAuth(){ try{ return JSON.parse(localStorage.getItem(AUTH_KEY)); }catch(e){ return null; } }
+function signOut(){
+  localStorage.removeItem(AUTH_KEY);
+  if(authRequired()) location.href=`https://login.microsoftonline.com/${AUTH.tenantId}/oauth2/v2.0/logout?post_logout_redirect_uri=`+encodeURIComponent(AUTH.redirectUri);
+  else location.reload();
+}
+function showSignin(err){ document.getElementById('signinOverlay').hidden=false; if(err) document.getElementById('signinErr').textContent=err; }
+function updateUserChip(){ const chip=document.getElementById('userChip'), btn=document.getElementById('signOutBtn'); if(currentUser){ chip.textContent=currentUser.name; chip.hidden=false; btn.hidden=!authRequired(); } }
+async function initAuth(){
+  if(!authRequired()){ currentUser=loadAuth(); updateUserChip(); return true; }
+  try{ await completeSignIn(); }catch(e){ showSignin(e.message); return false; }
+  const u=currentUser||loadAuth();
+  const fresh=u&&(navigator.onLine===false||(Date.now()-u.iat)<AUTH.maxAgeDays*86400000);
+  if(fresh){ currentUser=u; updateUserChip(); return true; }
+  showSignin(); return false;
+}
+
+/* ---------- Activity log ---------- */
+const editLogged=new Set();
+function actor(){ return currentUser?(currentUser.name||currentUser.email):'Local device (no sign-in)'; }
+function logAct(c,action){ if(!c) return; (c.log=c.log||[]).push({t:new Date().toISOString(),u:actor(),a:action}); if(c.log.length>500) c.log.splice(0,c.log.length-500); }
+</script>
+<script>
+/* =====================================================================
+   Vocabularies (from the Operating Tools Packet and the handoff guide)
+   ===================================================================== */
+const STAFF = ['', 'Namond Williams', 'James DeBerry', 'Joshua Hatch', 'Other'];
+const REFERRAL_SOURCES = ['', 'Home Detention Unit (ORCC)', 'Pretrial Services (JRDC)', 'Self: QR intake form', 'Self: phone or email', 'Defense counsel / OPD', 'Community partner', 'Other'];
+const INSTITUTIONS = ['', 'Ordnance Road Correctional Center', 'Jennifer Road Detention Center', 'Other / not applicable'];
+const SUPERVISION = ['', 'House Arrest', 'Pretrial Supervision', 'Post-release / none', 'Other'];
+const CONTACT_METHODS = ['', 'In person', 'Video', 'Phone', 'Text', 'Email', 'Turnaround Thursday', 'Community visit', 'Other'];
+const CONTACT_RESULTS = ['', 'Completed', 'Left message', 'No answer', 'Wrong number', 'Declined', 'Other'];
+const VR = ['', 'Verified', 'Participant-reported', 'Not yet verified'];
+const YN = ['', 'Yes', 'No'];
+const YNNA = ['', 'Yes', 'No', 'N/A'];
+const PRIORITY = ['', 'High', 'Medium', 'Low'];
+const DOMAINS = [
+  ['housing','Housing'], ['employment','Employment and income'], ['education','Education and training'],
+  ['transport','Transportation'], ['health','Physical and behavioral health'], ['sud','Substance use support (referral only)'],
+  ['family','Family and social support'], ['legal','Legal and supervision compliance'], ['docs','Identification and documents'],
+  ['basic','Basic needs and benefits']
+];
+const PHASES = ['', 'Enrollment inquiry', 'Intake and authorization', 'Assessment', 'Plan development', 'Active case management', 'Justice-system coordination', 'Court milestone', 'Closure and follow-up'];
+const ENGAGEMENT = ['', 'Engaged', 'Partial', 'No-show', 'Unable to reach', 'Re-engagement needed'];
+const OUTCOME_EVENTS = ['Enrolled', 'Completed program', 'Connected to housing', 'Connected to behavioral health', 'Connected to benefits or insurance', 'Placed in a job', 'Maintained employment', 'New arrest', 'Other'];
+const CORR_ROLES = ['', 'Defense counsel / OPD', 'Court / Judge', "State's Attorney", 'Pretrial Services', 'Home Detention Unit', 'Other supervision agency', 'Other'];
+const CORR_TYPES = ['', 'Introduction letter', 'Progress summary', 'Verification letter', 'Email', 'Court report', 'Other'];
+const DISPOSITIONS = ['Draft', 'Pending CEASO approval', 'Approved as drafted', 'Approved with revisions', 'Revise and resubmit', 'Hold', 'Withdrawn'];
+const APPROVED = ['Approved as drafted', 'Approved with revisions'];
+const MILESTONE_TYPES = ['', 'Hearing', 'Trial', 'Sentencing', 'Review hearing', 'Supervision review', 'Release', 'Modification decision', 'Other'];
+const CLOSURE = ['', 'Program completed', 'Withdrew', 'Inactive after re-engagement attempts', 'Transferred', 'Court matter resolved; services continue', 'Other'];
+const REF_STATUS = ['', 'Issued', 'Connected', 'In service', 'Completed', 'Declined', 'No show', 'Closed: not needed'];
+const GOCPP = [
+  ['enrolled','Enrolled in program'], ['completed','Completed program'], ['newArrest','New arrest within one year of enrollment'],
+  ['housing','Connected to housing'], ['bh','Connected to behavioral health'], ['benefits','Connected to benefits or health insurance'],
+  ['job','Placed in a job'], ['emp30','Maintained employment 30 days'], ['emp90','Maintained employment 90 days'], ['emp180','Maintained employment 180 days']
+];
+/* ---------- CSBG Annual Report (Module 4, Sections C and D) characteristics ---------- */
+const FPL_YEAR = 2026;                       // HHS poverty guidelines effective Jan 13, 2026 (48 states + DC)
+const FPL_BASE = 15960, FPL_STEP = 5680;     // update each January
+const CSBG_INCOME_LIMIT_PCT = 125;           // AACCAA CSBG eligibility ceiling; confirm with the CSBG Compliance Manager / MD DHCD
+function fplAnnual(size){ size=Math.max(1,parseInt(size,10)||1); return FPL_BASE + FPL_STEP*(size-1); }
+const ID_TYPES = ['', "Driver's license", 'State ID card', 'Passport', 'Correctional / DOC ID', 'Birth certificate', 'Other government photo ID', 'No ID (assistance needed)'];
+const HH_TYPES = ['', 'Single person', 'Single parent female', 'Single parent male', 'Two parent household', 'Two adults no children', 'Other'];
+const INCOME_SOURCES = ['Income from employment', 'TANF', 'SSI', 'SSDI', 'Social Security', 'Pension', 'General assistance', 'Unemployment insurance', 'Child support', 'Other', 'No income'];
+const INCOME_DOCS = ['Pay stubs (30 days)', 'Employer statement', 'Benefit award letter', 'Tax return', 'Bank statement (income deposits only)', 'Zero-income self-declaration', 'Other'];
+const NONCASH = ['SNAP', 'WIC', 'LIHEAP / energy assistance', 'Housing choice voucher', 'Public housing', 'Permanent supportive housing', 'HUD-VASH', 'Childcare voucher', 'Affordable Care Act subsidy', 'Other', 'None'];
+const ED_LEVELS = ['', 'Grades 0-8', 'Grades 9-12 non-graduate', 'High school graduate / equivalency', '12 grade plus some post-secondary', '2 or 4 year college graduate', 'Graduate or other post-secondary degree', 'Unknown'];
+const WORK_STATUS = ['', 'Employed full-time', 'Employed part-time', 'Migrant or seasonal farm worker', 'Unemployed (short-term, 6 months or less)', 'Unemployed (long-term, more than 6 months)', 'Not in labor force', 'Retired', 'Unknown'];
+const INSURANCE_TYPES = ['', 'Medicaid', 'Medicare', 'State CHIP', 'State health insurance for adults', 'Military health care', 'Direct purchase', 'Employment based', 'Other', 'Unknown'];
+const ELIG = ['', 'Meets required program guidelines', 'Over income per program guidelines', 'Denied missing information per program guidelines'];
+const CSBG_REQUIRED = [['idType','Identification type'],['idVerifiedDate','ID verified date'],['hhType','Household type'],['hhSize','Household size'],['incomeSources','Income sources'],['incomeDocs','Income verification documents'],['incomeVerifiedDate','Income verified date'],['eligDetermination','Eligibility determination'],['gender','Gender'],['race','Race'],['ethnicity','Ethnicity'],['edlevel','Education level'],['workStatus','Work status'],['disability','Disabling condition'],['veteran','Military status'],['insurance','Health insurance'],['residencyVerified','County residency verified']];
+function csbgMissing(c){ const p=c.p1; return CSBG_REQUIRED.filter(([k])=>{ const v=p[k]; return Array.isArray(v)?v.length===0:!v; }).map(([,l])=>l).concat((p.monthlyIncome===''||p.monthlyIncome===undefined)&&!(p.incomeSources||[]).includes('No income')?['Gross monthly household income']:[]); }
+function csbgComplete(c){ return csbgMissing(c).length===0; }
+function fplPct(c){ const p=c.p1; const annual=((p.incomeSources||[]).includes('No income')?0:parseFloat(p.monthlyIncome||0))*12; return Math.round(annual/fplAnnual(p.hhSize)*100); }
+function fplBand(pct){ const b=[[50,'0-50%'],[75,'51-75%'],[100,'76-100%'],[125,'101-125%'],[150,'126-150%'],[175,'151-175%'],[200,'176-200%'],[250,'201-250%']]; for(const [x,l] of b) if(pct<=x) return l; return 'Over 250%'; }
+function ageOf(dob){ if(!dob) return ''; const d=new Date(dob), t=new Date(); let a=t.getFullYear()-d.getFullYear(); if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate())) a--; return a; }
+
+const CHECKLIST = [
+  'Enrollment inquiry logged with date and referral source', 'CSBG eligibility and characteristics complete (ID, household, income, determination)', 'Initial contact within two business days (or reason recorded)', 'Intake completed with participant profile',
+  'Justice status recorded with source and verification flag', 'Signed authorization on file (or status recorded)', 'Protected-records authorization addressed if applicable',
+  'Assessment completed (interest profiler, risk and needs, education)', 'Needs and barriers screen completed with priorities', 'Individualized Diversion Plan with at least one goal',
+  'Plan acknowledged by participant', 'Weekly progress note in the last seven days', 'Every referral tracked to connection and outcome',
+  'Court and supervision milestones current', 'No correspondence sent without approval', 'Authorization confirmed before each correspondence',
+  'Outcome events recorded with evidence source', 'Plan review completed on schedule', 'Contact and identification information current',
+  'Case file free of clinical detail and identifiers in file names', 'Closure documented with outcomes and follow-up (when closed)'
+];
+const QA_AREAS = ['CSBG eligibility documentation', 'Intake timeliness', 'Authorization and scope', 'Assessment quality', 'Plan quality and specificity', 'Weekly contact cadence', 'Note quality (verified vs reported)', 'Referral follow-through', 'Justice-system coordination compliance', 'Court milestone tracking', 'Outcome documentation', 'Confidentiality practice', 'Participant engagement', 'Supervision communication', 'File completeness'];
+const QA_STATUS = ['', 'Meets', 'Needs action', 'N/A'];
+
+/* ---------- empowOR (edit the values to match the agency managed lists) ---------- */
+const EMPOWER = {
+  importSource: 'AACCAA P2P Tool',
+  program: 'Pathway to Prosperity',
+  caseNoteCategory: 'General Note',
+  noteCategoryByMethod: {'Phone':'Phone Call','Text':'General Note','In person':'Client Office Visit','Video':'General Note','Email':'General Note','Turnaround Thursday':'Client Office Visit','Community visit':'General Note'},
+  // Service labels used in this tool -> empowOR service names (CSBG tenant mapping, Sept 2026)
+  services: {
+    'Case management': 'Services Supporting Multiple Domains (SRV 7) - Case Management',
+    'Referral': 'Services Supporting Multiple Domains (SRV 7) - Referrals',
+    'Intake assessment': 'Returning Citizens - Intake Assessment',
+    'Mentoring (7 Habits)': 'Education and Cognitive Development Services (SRV 2) - Mentoring',
+    'Job search coaching': 'Employment Services (SRV 1) - Job Search Coaching',
+    'Resume development': 'Employment Services (SRV 1) - Resume Development',
+    'Interview skills training': 'Employment Services (SRV 1) - Interview Skills Training',
+    'Job referral': 'Employment Services (SRV 1) - Job Referrals',
+    'Job placement': 'Employment Services (SRV 1) - Job Placements',
+    'Transitional housing placement': 'Housing Services (SRV 4) - Transitional Housing Placements',
+    'Fees paid': 'Returning Citizens - Fees',
+    "First month's rent": "Returning Citizens - First Month's Rent",
+  },
+  maps: {
+    gender: {'Woman':'Female','Man':'Male','Nonbinary':"Doesn't identify as male, female or transgender"},
+    ethnicity: {'Hispanic/Latino':'Hispanic / Latino','Not Hispanic/Latino':'Non-Hispanic / Not Latino','Declined':'Chose not to respond/Refused/Did not self identify'},
+    race: {'American Indian/Alaska Native':'American Indian/Alaska Native','Asian':'Asian','Black/African American':'Black/ African American','Native Hawaiian/Pacific Islander':'Native Hawaiian and Other Pacific Islander','White':'White','Another race':'Other Race'},
+    housing: {'Own':'Homeowner','Rent':'Rent','Staying with others':'Other','Transitional housing':'Other','Shelter':'Homeless','Unsheltered':'Homeless','Home detention at residence':'Other','Other':'Other'},
+    employment: {'Full-time':'Employed-Full time','Part-time':'Employed-Part time (including multiple part time jobs)','Temporary':'Season/Temporary Employment','Unemployed (less than 6 months)':'Unemployed (< 6 Months)','Unemployed (6 months or more)':'Unemployed (>6 Months)','Unable to work':'Not in Labor Force','Retired':'Not in Labor Force'},
+    edlevel: {'Less than high school':'9-12/Non-Graduate','Diploma/GED':'12 Yrs (GED HS equivalency)','Degree':'16 Yrs (Received BA/BS)'},
+    insurance: {'No':'0-No Health Insurance','Yes':'Insured-Unknown Type'},
+    insuranceType: {'Medicaid':'Medicaid','Medicare':'Medicare','State CHIP':'State CHIP','State health insurance for adults':'State Health Insurance for Adults','Military health care':'Military Health Care','Direct purchase':'Direct-Purchase','Employment based':'Employment Based','Other':'Other','Unknown':'Insured-Unknown Type'},
+    familytype: {'Single person':'Single Person','Single parent female':'Single Parent Female','Single parent male':'Single Parent Male','Two parent household':'Two Parent Household','Two adults no children':'Two Adults No Children','Other':'Other'},
+    disabled: {'Yes':'Yes','No':'No','Unknown':'Unknown/not reported'},
+    vetstatus: {'Veteran':'Veteran','Active duty':'Active Military','Never served':'Not a Veteran','Unknown':'Unknown/not reported'},
+    edlevelCSBG: {'Grades 0-8':'0-8','Grades 9-12 non-graduate':'9-12/Non-Graduate','High school graduate / equivalency':'12 Yrs (GED HS equivalency)','12 grade plus some post-secondary':'12+ Some Post-Secondary','2 or 4 year college graduate':'16 Yrs (Received BA/BS)','Graduate or other post-secondary degree':'Graduate or Other Post-Secondary Degree'},
+    workStatus: {'Employed full-time':'Employed-Full time','Employed part-time':'Employed-Part time (including multiple part time jobs)','Migrant or seasonal farm worker':'Season/Temporary Employment','Unemployed (short-term, 6 months or less)':'Unemployed (< 6 Months)','Unemployed (long-term, more than 6 months)':'Unemployed (>6 Months)','Not in labor force':'Not in Labor Force','Retired':'Not in Labor Force'},
+    language: {'english':'English','spanish':'Spanish'},
+  },
+};
+const SERVICE_LABELS = Object.keys(EMPOWER.services);
+const EMP_HH_HEADER = "recordtype,ImportSource,householdid,housingstatus,familytype,numberadults,numberchildren,nseniors,manualoverride,participantid,firstname,middlename,lastname,suffix,ssn,altid,altidtype,dob,estimateddob,email,gender,phonetype,phonelist,phoneext,racelist,ethnicity,languages,disabled,healthinsurance,maritalstatus,edlevel,vetstatus,employmentstatus,participantstatus,enteredby,entrydate,uscitizen,headofhousehold,relationship,percentage,physicaladressid,padrtype,physicaladdrprimary,physicaladdress1,physicaladdress2,physicaladdresscity,physicaladdressstate,physicaladdresszip,physicaladdresscounty,physicaladdressdate,mailingaddressid,madrtype,mailingadrprimary,mailingaddress1,mailingaddress2,mailingaddresscity,mailingaddressstate_a,mailingaddresszip,mailingaddresscounty,mailingaddressdate".split(',');
+const EMP_INC_HEADER = "RecordType,ISource,ParticipantID,HouseholdID,IncomeID,IDate,Code,Source,period,Amount".split(',');
+const EMP_NOTE_HEADER = "recordtype,ImportSource,casenoteid,HouseholdID,participantid,notedate,notetime,staffmember,category,casenote,confidential,Import".split(',');
+const EMP_ENR_HEADER = "RecordType,importSource,Record ID,HouseholdID,participantid,Program,Status,StartDate,EndDate,Service Date,Service Description,Outcome,Outcome Date".split(',');
+
+/* =====================================================================
+   Data layer
+   ===================================================================== */
+let cases = {}, currentId = null, activeTab = 'p1', saveTimer = null;
+function loadStore(){ try{ cases=JSON.parse(localStorage.getItem(STORE_KEY)||'{}'); }catch(e){ cases={}; } }
+function persist(){ localStorage.setItem(STORE_KEY,JSON.stringify(cases)); setStatus('Saved '+new Date().toLocaleTimeString()); updateCount(); backupToFolder(); }
+function setStatus(t){ document.getElementById('saveStatus').textContent=t; }
+function updateCount(){ document.getElementById('caseCount').textContent=Object.keys(cases).length+' case(s) on this computer'; }
+function today(){ return new Date().toISOString().slice(0,10); }
+function blankCase(){
+  return {
+    created:new Date().toISOString(), updated:new Date().toISOString(), log:[], selected:false,
+    p1:{ pid:'', inquiryDate:today(), referralSource:'', referralContact:'', institution:'', supervision:'', supervisionCM:'', supervisionCMPhone:'',
+         staff:'', c1Date:'', c1Method:'', c1Result:'', c2Date:'', c2Method:'', c2Result:'', c3Date:'', c3Method:'', c3Result:'',
+         initialContactDate:'', initialContactReason:'', intakeDate:'', intakeMethod:'',
+         name:'', prefName:'', dob:'', phone:'', email:'', prefContact:'', housing:'', address:'', city:'', zip:'', emergencyName:'', emergencyPhone:'',
+         gender:'', race:[], ethnicity:'', language:'', insurance:'', insuranceType:'', employment:'', edlevel:'', workStatus:'', disability:'', veteran:'', residencyVerified:'',
+         idType:'', idVerifiedDate:'', idCopyOnFile:'', idVerifiedBy:'', hhType:'', hhSize:'', hhAdults:'', hhChildren:'', hhSeniors:'', incomeSources:[], incomeDocs:[], incomeVerifiedDate:'', incomeVerifiedBy:'', monthlyIncome:'', nonCash:[], eligDetermination:'', eligDate:'', eligBy:'',
+         servicesInterested:[], caseNumber:'', caseNumberVR:'', court:'', chargeCategory:'', chargeVR:'', restrictions:'', nextCourtDate:'',
+         counselName:'', counselContact:'', counselVR:'', publicInfoSource:'', publicInfoDate:'',
+         concerns:'', goals:'', strengths:'', change:'' },
+    p2:{ status:'', form:'', signedDate:'', expires:'', recipients:[], scope:'', protectedFlag:'', protectedAuth:'', paperLocation:'' },
+    p3:{ onetDate:'', onetAreas:'', onetFindings:'', onetVR:'', riskName:'', riskDate:'', riskResult:'', riskFindings:'', riskVR:'',
+         edGrade:'', edCreds:'', edVerified:'', otherAssess:'', needs:{} },
+    p4:{ startDate:'', version:'1', lastReview:'', nextReview:'', ackDate:'', goals:[], commitments:[], reviews:[] },
+    p5:[],
+    p6:[],
+    p7:{ corr:[], milestones:[] },
+    p8:{ status:'', date:'', finalNoteDate:'', reason:'', outcomes:'', followUp:'', continued:'', gocpp:{} },
+    p9:{ checklist:{}, reviews:[] },
+    notes:''
+  };
+}
+function nextPid(){
+  const yy = String(new Date().getFullYear()+1).slice(-2); // fiscal-year style: FY27 -> 27
+  const fy = new Date().getMonth()>=6 ? yy : String(new Date().getFullYear()).slice(-2);
+  const nums = Object.values(cases).map(c=>c.p1.pid).filter(p=>p.startsWith('P2P-'+fy+'-')).map(p=>parseInt(p.slice(-4),10)).filter(n=>!isNaN(n));
+  const n = (nums.length?Math.max(...nums):0)+1;
+  return `P2P-${fy}-${String(n).padStart(4,'0')}`;
+}
+
+/* ---------- Date helpers ---------- */
+function daysBetween(a,b){ if(!a||!b) return null; return Math.round((new Date(b)-new Date(a))/86400000); }
+function addBusinessDays(d,n){ const x=new Date(d); let k=0; while(k<n){ x.setDate(x.getDate()+1); if(x.getDay()!==0&&x.getDay()!==6) k++; } return x.toISOString().slice(0,10); }
+function fmtDate(s){ if(!s) return ''; const [y,m,d]=s.split('-'); return `${m}/${d}/${y}`; }
+function stamp(){ return new Date().toISOString().slice(0,10); }
+
+/* ---------- Derived status ---------- */
+function lastNote(c){ return c.p5.filter(n=>n.date).sort((a,b)=>b.date.localeCompare(a.date))[0]; }
+function derived(c){
+  const p1=c.p1, d={};
+  d.closed = !!c.p8.date;
+  d.enrolled = !!p1.intakeDate;
+  d.status = d.closed ? 'Closed' : d.enrolled ? 'Active' : (p1.initialContactDate ? 'Intake pending' : 'Inquiry');
+  d.initialDue = p1.inquiryDate ? addBusinessDays(p1.inquiryDate,2) : '';
+  d.initialOverdue = !!(d.initialDue && !p1.initialContactDate && today()>d.initialDue && !p1.initialContactReason);
+  const ln = lastNote(c);
+  d.lastContact = ln ? ln.date : (p1.initialContactDate||'');
+  d.daysSince = d.lastContact ? daysBetween(d.lastContact, today()) : null;
+  d.contactLapsed = d.status==='Active' && (d.daysSince===null || d.daysSince>=7);
+  d.nextContact = ln ? ln.nextDate : '';
+  const ms = c.p7.milestones.filter(m=>m.date && m.date>=today()).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  d.nextCourt = ms ? ms.date : (p1.nextCourtDate && p1.nextCourtDate>=today() ? p1.nextCourtDate : '');
+  d.courtSoon = d.nextCourt && daysBetween(today(), d.nextCourt)<=7;
+  d.pendingCorr = c.p7.corr.filter(x=>x.disposition==='Pending CEASO approval').length;
+  d.openRefs = c.p6.filter(r=>['Issued','Connected','In service'].includes(r.status)).length;
+  d.authOk = c.p2.status==='On file';
+  d.assessDone = !!(c.p3.onetDate || c.p3.riskDate) && Object.keys(c.p3.needs).length>0;
+  d.planDone = c.p4.goals.length>0 && !!c.p4.startDate;
+  d.checklistDone = CHECKLIST.filter((_,i)=>c.p9.checklist['i'+i]).length;
+  d.lastQA = (c.p9.reviews.filter(r=>r.date).sort((a,b)=>b.date.localeCompare(a.date))[0]||{}).date||'';
+  return d;
+}
+function tabDone(c, tab){
+  const p1=c.p1, d=derived(c);
+  switch(tab){
+    case 'p1': return !!(p1.pid && p1.name && p1.intakeDate && p1.supervision && p1.staff && (p1.initialContactDate||p1.initialContactReason)) && csbgComplete(c);
+    case 'p2': return !!c.p2.status;
+    case 'p3': return d.assessDone;
+    case 'p4': return d.planDone && !!c.p4.ackDate;
+    case 'p5': return c.p5.length>0 && !d.contactLapsed;
+    case 'p6': return c.p6.length>0 && c.p6.every(r=>r.status && r.status!=='Issued');
+    case 'p7': return c.p7.corr.every(x=>!x.sentDate || APPROVED.includes(x.disposition));
+    case 'p8': return d.closed;
+    case 'p9': return d.checklistDone===CHECKLIST.length;
+    default: return false;
+  }
+}
+
+/* ---------- CSV / download ---------- */
+function csvCell(v){ v=(v===null||v===undefined)?'':String(v); return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function toCSV(header, rows){ return [header.map(csvCell).join(','), ...rows.map(r=>r.map(csvCell).join(','))].join('\r\n'); }
+function download(name, content, type){
+  const blob=new Blob([content],{type:type||'text/csv;charset=utf-8'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function selectedCases(){ const all=Object.values(cases); const sel=all.filter(c=>c.selected); return sel.length?sel:all; }
+
+/* ---------- Exports ---------- */
+const DASH_HEADER = ['Participant ID','Assigned Staff','Status','Referral Source','Institution','Supervision','Inquiry Date','Initial Contact Date','Initial Contact Overdue','Intake Date','CSBG Complete','Eligibility Determination','FPL %','Authorization','Assessment Complete','Plan Complete','Last Contact','Days Since Contact','Contact Lapsed','Next Contact','Next Court Date','Open Referrals','Pending Correspondence','Checklist Items Done','Last QA Review','Closure Status','Closure Date','Updated'];
+function dashRow(c){ const d=derived(c), p=c.p1; return [p.pid,p.staff,d.status,p.referralSource,p.institution,p.supervision,p.inquiryDate,p.initialContactDate,d.initialOverdue?'Yes':'No',p.intakeDate,csbgComplete(c)?'Yes':'No',p.eligDetermination,p.hhSize?fplPct(c):'',c.p2.status,d.assessDone?'Yes':'No',d.planDone?'Yes':'No',d.lastContact,d.daysSince??'',d.contactLapsed?'Yes':'No',d.nextContact,d.nextCourt,d.openRefs,d.pendingCorr,`${d.checklistDone}/${CHECKLIST.length}`,d.lastQA,c.p8.status,c.p8.date,c.updated.slice(0,10)]; }
+function exportDashboard(){ download(`P2P_Dashboard_${stamp()}.csv`, toCSV(DASH_HEADER, selectedCases().map(dashRow))); }
+const OUT_HEADER = ['Participant ID','Assigned Staff','Intake Date','Closure Status','Closure Date', ...GOCPP.flatMap(([k,l])=>[l+' (Y/N)', l+' date', l+' source'])];
+function exportOutcomes(){
+  const rows=selectedCases().map(c=>{ const g=c.p8.gocpp; return [c.p1.pid,c.p1.staff,c.p1.intakeDate,c.p8.status,c.p8.date, ...GOCPP.flatMap(([k])=>{ const x=g[k]||{}; return [x.yn||'', x.date||'', x.src||'']; })]; });
+  download(`P2P_GOCPP_Outcomes_${stamp()}.csv`, toCSV(OUT_HEADER, rows));
+}
+function exportNotesCSV(){
+  const H=['Participant ID','Date','Staff','Method','Duration (min)','Phase','Purpose','Verified info source','Legal/supervision change','Engagement','Outcome events','Next contact','Next method','Next focus'];
+  const rows=[]; for(const c of selectedCases()) for(const n of c.p5) rows.push([c.p1.pid,n.date,n.staff,n.method,n.duration,n.phase,n.purpose,n.verifiedSource,n.legalChange,n.engagement,(n.outcomes||[]).join('; '),n.nextDate,n.nextMethod,n.nextFocus]);
+  download(`P2P_Progress_Notes_${stamp()}.csv`, toCSV(H, rows));
+}
+function exportReferralsCSV(){
+  const H=['Participant ID','Date issued','Domain','Provider','Purpose','Service','Staff','Connected date','Status','Outcome','GOCPP category'];
+  const rows=[]; for(const c of selectedCases()) for(const r of c.p6) rows.push([c.p1.pid,r.date,r.domain,r.provider,r.purpose,r.service,r.staff,r.connectedDate,r.status,r.outcome,r.gocpp]);
+  download(`P2P_Referrals_${stamp()}.csv`, toCSV(H, rows));
+}
+function exportCorrespondenceCSV(){
+  const H=['Participant ID','Date drafted','Recipient role','Recipient','Type','Authorization confirmed','Requested send date','Disposition','Requested on','Approval date','CEASO comments','Sent date','Final file'];
+  const rows=[]; for(const c of selectedCases()) for(const x of c.p7.corr) rows.push([c.p1.pid,x.date,x.role,x.recipient,x.type,x.authOk,x.sendBy,x.disposition,x.requestedOn,x.approvalDate,x.comments,x.sentDate,x.finalFile]);
+  download(`P2P_Correspondence_${stamp()}.csv`, toCSV(H, rows));
+}
+function empMap(map,v){ return (EMPOWER.maps[map]||{})[v]||''; }
+function splitName(n){ const p=(n||'').trim().split(/\s+/); if(!p[0]) return ['','','']; if(p.length===1) return [p[0],'','']; return [p[0],p.slice(1,-1).join(' '),p[p.length-1]]; }
+function empowerHHRow(c){
+  const p=c.p1, [first,middle,last]=splitName(p.name), row={}; EMP_HH_HEADER.forEach(h=>row[h]='');
+  Object.assign(row,{recordtype:'Households & Participants',ImportSource:EMPOWER.importSource,householdid:p.pid,participantid:p.pid,
+    housingstatus:empMap('housing',p.housing),familytype:empMap('familytype',p.hhType),numberadults:p.hhAdults||'1',numberchildren:p.hhChildren||'',nseniors:p.hhSeniors||'',manualoverride:'No',firstname:first,middlename:middle,lastname:last,
+    dob:fmtDate(p.dob),estimateddob:p.dob?'No':'',email:p.email,gender:empMap('gender',p.gender),phonetype:p.phone?'Mobile':'',phonelist:p.phone,
+    racelist:(p.race||[]).map(r=>empMap('race',r)).filter(Boolean).join(';'),ethnicity:empMap('ethnicity',p.ethnicity),
+    languages:p.language?(empMap('language',p.language.trim().toLowerCase())||'All Other Languages'):'',
+    disabled:empMap('disabled',p.disability),healthinsurance:p.insurance==='Yes'?(empMap('insuranceType',p.insuranceType)||'Insured-Unknown Type'):empMap('insurance',p.insurance),edlevel:empMap('edlevelCSBG',p.edlevel),vetstatus:empMap('vetstatus',p.veteran),employmentstatus:empMap('workStatus',p.workStatus),
+    participantstatus:'Active',entrydate:fmtDate(p.intakeDate||p.inquiryDate),headofhousehold:'Yes',relationship:'Primary',
+    padrtype:p.address?'Physical':'',physicaladdrprimary:p.address?'No':'',physicaladdress1:p.address,physicaladdresscity:p.city,
+    physicaladdressstate:p.address?'MD':'',physicaladdresszip:p.zip,physicaladdresscounty:p.address?'Anne Arundel':''});
+  return EMP_HH_HEADER.map(h=>row[h]);
+}
+function exportEmpowerHH(){ download(`empowOR_P2P_Households_Participants_${stamp()}.csv`, toCSV(EMP_HH_HEADER, selectedCases().filter(c=>c.p1.pid&&c.p1.intakeDate).map(empowerHHRow))); }
+function exportEmpowerIncome(){
+  const rows=[];
+  for(const c of selectedCases()){ const p=c.p1; if(!p.pid||!p.intakeDate) continue; const zero=(p.incomeSources||[]).includes('No income');
+    const srcs=(p.incomeSources||[]).filter(x=>x!=='No income'); const amt=zero?0:parseFloat(p.monthlyIncome||0);
+    if(!srcs.length) rows.push(['Income',EMPOWER.importSource,p.pid,p.pid,p.pid+'-INC1',fmtDate(p.incomeVerifiedDate||p.intakeDate),'',zero?'No Income':'Other','Monthly',amt]);
+    else srcs.forEach((sname,i)=>rows.push(['Income',EMPOWER.importSource,p.pid,p.pid,`${p.pid}-INC${i+1}`,fmtDate(p.incomeVerifiedDate||p.intakeDate),'',sname==='Income from employment'?'Employment':sname,'Monthly',i===0?amt:0])); }
+  download(`empowOR_P2P_Income_${stamp()}.csv`, toCSV(EMP_INC_HEADER, rows));
+}
+function exportEmpowerNotes(){
+  const rows=[]; let n=0;
+  for(const c of selectedCases()){ if(!c.p1.pid) continue;
+    for(const x of c.p5){ if(!x.date) continue; const cat=EMPOWER.noteCategoryByMethod[x.method]||EMPOWER.caseNoteCategory;
+      const txt=`P2P ${x.purpose||'contact'} (${x.method||'contact'}). Engagement: ${x.engagement||'n/a'}. Action: ${x.action||''} Next: ${x.nextFocus||''}`.trim();
+      rows.push(['Case Notes',EMPOWER.importSource,++n,c.p1.pid,c.p1.pid,fmtDate(x.date),0,x.staff||c.p1.staff,cat,txt,'No','Import']); } }
+  download(`empowOR_P2P_Case_Notes_${stamp()}.csv`, toCSV(EMP_NOTE_HEADER, rows));
+}
+function exportEmpowerEnroll(){
+  const rows=[];
+  for(const c of selectedCases()){ if(!c.p1.pid||!c.p1.intakeDate) continue; const start=fmtDate(c.p1.intakeDate), end=fmtDate(c.p8.date||c.p1.intakeDate); let i=0;
+    const items=[]; items.push({date:c.p1.intakeDate, svc:'Intake assessment'}); if(c.p1.eligDetermination) items.push({date:c.p1.eligDate||c.p1.intakeDate, svc:'__elig'});
+    for(const n of c.p5) for(const s of (n.services||[])) items.push({date:n.date, svc:s});
+    for(const r of c.p6) if(r.service && r.connectedDate) items.push({date:r.connectedDate, svc:r.service});
+    for(const it of items){ const svc=it.svc==='__elig'?('Eligibility Determinations (SRV 7b) - '+c.p1.eligDetermination):EMPOWER.services[it.svc]; if(!svc) continue;
+      rows.push(['Enrollment',EMPOWER.importSource,`${c.p1.pid}-${++i}`,c.p1.pid,c.p1.pid,EMPOWER.program,'Enrolled',start,end,fmtDate(it.date),svc,c.p8.status||'None',fmtDate(c.p8.date)]); } }
+  download(`empowOR_P2P_Enrollment_Services_${stamp()}.csv`, toCSV(EMP_ENR_HEADER, rows));
+}
+function exportCaseJSON(){ const c=cases[currentId]; download(`P2P_case_${safeName(c.p1.pid||currentId)}.json`, JSON.stringify({format:CASE_FORMAT,version:1,cases:{[currentId]:c}},null,2),'application/json'); logAct(c,'Saved case file'); }
+function exportAllCasesJSON(){ download(`P2P_all_cases_${stamp()}.json`, JSON.stringify({format:CASE_FORMAT,version:1,savedAt:new Date().toISOString(),cases},null,2),'application/json'); }
+function loadCaseFile(ev){
+  const file=ev.target.files[0]; if(!file) return; const reader=new FileReader();
+  reader.onload=()=>{ try{ const data=JSON.parse(reader.result); if(data.format!==CASE_FORMAT) throw new Error('Not a P2P case file'); let n=0;
+    for(const [id,c] of Object.entries(data.cases)){ const ex=cases[id]; if(ex&&ex.updated>c.updated&&!confirm(`Case ${c.p1.pid||id} on this computer is newer than the file. Overwrite with the file version?`)) continue; cases[id]=c; logAct(c,'Loaded from case file'); n++; }
+    persist(); renderHome(); alert(`Loaded ${n} case(s) from ${file.name}.`); }catch(e){ alert('Could not read that file: '+e.message); } };
+  reader.readAsText(file); ev.target.value='';
+}
+</script>
+<script>
+/* =====================================================================
+   Automatic SharePoint backup (File System Access API)
+   ===================================================================== */
+const FSA_SUPPORTED='showDirectoryPicker' in window;
+let backupDir=null, backupState='off', lastBackupAt=null, backupBusy=false, backupAgain=false;
+function idb(){ return new Promise((res,rej)=>{ const rq=indexedDB.open('p2p-backup',1); rq.onupgradeneeded=()=>rq.result.createObjectStore('handles'); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+async function idbSet(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const tx=db.transaction('handles','readwrite'); tx.objectStore('handles').put(v,k); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }
+async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const rq=db.transaction('handles').objectStore('handles').get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+async function connectBackupFolder(){
+  if(!FSA_SUPPORTED){ alert('This browser cannot connect a backup folder automatically. Use Microsoft Edge or Chrome, or back up manually with "Backup all cases (JSON)" into the SharePoint folder.'); return; }
+  try{ backupDir=await showDirectoryPicker({mode:'readwrite',id:'p2p-backup'}); await idbSet('dir',backupDir); backupState='ok'; await backupToFolder(true); renderBackupUI(); }catch(e){}
+}
+async function restoreBackupFolder(){
+  if(!FSA_SUPPORTED){ renderBackupUI(); return; }
+  try{ const h=await idbGet('dir'); if(!h){ renderBackupUI(); return; } const perm=await h.queryPermission({mode:'readwrite'});
+    if(perm==='granted'){ backupDir=h; backupState='ok'; backupToFolder(true); } else { backupDir=h; backupState='reconnect'; } }catch(e){ backupState='off'; }
+  renderBackupUI();
+}
+async function reconnectBackup(){ if(!backupDir) return connectBackupFolder(); try{ const perm=await backupDir.requestPermission({mode:'readwrite'}); if(perm==='granted'){ backupState='ok'; await backupToFolder(true); } }catch(e){ backupState='error'; } renderBackupUI(); }
+function safeName(s){ return (s||'unnamed').replace(/[^A-Za-z0-9._-]+/g,'_'); }
+async function writeFile(dir,name,content){ const fh=await dir.getFileHandle(name,{create:true}); const w=await fh.createWritable(); await w.write(content); await w.close(); }
+async function backupToFolder(force){
+  if(!backupDir||(backupState!=='ok'&&!force)) return; if(backupBusy){ backupAgain=true; return; } backupBusy=true;
+  try{ for(const [id,c] of Object.entries(cases)){ await writeFile(backupDir,`P2P_case_${safeName(c.p1.pid||id)}.json`,JSON.stringify({format:CASE_FORMAT,version:1,cases:{[id]:c}},null,2)); }
+    await writeFile(backupDir,'_all_cases_backup.json',JSON.stringify({format:CASE_FORMAT,version:1,savedAt:new Date().toISOString(),cases},null,2));
+    backupState='ok'; lastBackupAt=new Date(); }catch(e){ backupState=(e&&e.name==='NotAllowedError')?'reconnect':'error'; }
+  backupBusy=false; renderBackupUI(); if(backupAgain){ backupAgain=false; backupToFolder(); }
+}
+function renderBackupUI(){
+  const st=document.getElementById('backupStatus'), banner=document.getElementById('backupBanner'), btn=document.getElementById('backupBtn'); const hasCases=Object.keys(cases).length>0; if(!st) return;
+  if(backupState==='ok'){ st.textContent='SharePoint backup ✓'+(lastBackupAt?' '+lastBackupAt.toLocaleTimeString():''); banner.hidden=true; if(btn) btn.textContent='Change backup folder…'; }
+  else if(backupState==='reconnect'){ st.textContent='SharePoint backup: click to reconnect'; banner.hidden=false; banner.innerHTML='<b>Backup paused.</b> The browser needs permission again after restarting. <button class="btn small" onclick="reconnectBackup()">Reconnect backup folder</button>'; }
+  else if(backupState==='error'){ st.textContent='SharePoint backup FAILED: back up manually'; banner.hidden=false; banner.className='banner bad'; banner.innerHTML='<b>Automatic backup failed.</b> Use "Backup all cases (JSON)" and save the file into the SharePoint folder, then <button class="btn small" onclick="connectBackupFolder()">reconnect the folder</button>.'; }
+  else { st.textContent=FSA_SUPPORTED?'SharePoint backup: not connected':''; banner.hidden=!(hasCases&&FSA_SUPPORTED); banner.className='banner'; if(!banner.hidden) banner.innerHTML='<b>Cases on this computer are not backed up to SharePoint yet.</b> Click <b>Connect SharePoint backup folder…</b> and choose the program\'s synced SharePoint folder; after that, every save is backed up automatically.'; }
+}
+function scheduleSave(){
+  setStatus('Saving…');
+  if(currentId){ const key=currentId+'|'+activeTab; if(!editLogged.has(key)){ editLogged.add(key); logAct(cases[currentId],'Edited '+(TABS.find(t=>t[0]===activeTab)||['','section'])[1]); } }
+  clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ if(currentId) cases[currentId].updated=new Date().toISOString(); persist(); if(currentId){ refreshTabDots(); renderCaseHeader(); } },400);
+}
+
+/* =====================================================================
+   Views
+   ===================================================================== */
+function showView(v){
+  document.getElementById('viewHome').hidden=v!=='home'; document.getElementById('viewCase').hidden=v!=='case'; document.getElementById('viewHelp').hidden=v!=='help';
+  document.getElementById('navCases').classList.toggle('active',v!=='help'); document.getElementById('navHelp').classList.toggle('active',v==='help');
+  if(v==='home'){ currentId=null; renderHome(); }
+}
+function esc(s){ return (s===null||s===undefined)?'':String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function caseChips(c){
+  const d=derived(c), ch=[];
+  ch.push(`<span class="chip ${d.status==='Active'?'ok':d.status==='Closed'?'':'info'}">${d.status}</span>`);
+  if(d.initialOverdue) ch.push('<span class="chip bad">Initial contact overdue</span>');
+  if(d.contactLapsed) ch.push(`<span class="chip warn">${d.daysSince===null?'No contact logged':d.daysSince+' days since contact'}</span>`);
+  if(d.courtSoon) ch.push(`<span class="chip warn">Court ${fmtDate(d.nextCourt)}</span>`);
+  if(d.pendingCorr) ch.push(`<span class="chip info">${d.pendingCorr} awaiting CEASO</span>`);
+  if(!csbgComplete(c)) ch.push('<span class="chip bad">CSBG incomplete</span>');
+  if(!d.authOk && d.status!=='Inquiry') ch.push('<span class="chip warn">No authorization</span>');
+  if(d.openRefs) ch.push(`<span class="chip info">${d.openRefs} open referral${d.openRefs>1?'s':''}</span>`);
+  return ch.join('');
+}
+function renderHome(){
+  const q=(document.getElementById('searchBox').value||'').toLowerCase(); const wrap=document.getElementById('caseTableWrap');
+  const list=Object.entries(cases).filter(([id,c])=>!q||[c.p1.pid,c.p1.name,c.p1.prefName,c.p1.staff].join(' ').toLowerCase().includes(q)).sort((a,b)=>b[1].updated.localeCompare(a[1].updated));
+  if(!list.length){ wrap.innerHTML='<div class="empty">No cases yet. Click <b>+ New Case</b> to begin.</div>'; updateCount(); renderBackupUI(); return; }
+  wrap.innerHTML=`<div class="tablewrap"><table><thead><tr><th></th><th>Participant ID</th><th>Name</th><th>Staff</th><th>Status</th><th>Last contact</th><th>Next court</th><th>Last edited</th><th></th></tr></thead><tbody>`+
+    list.map(([id,c])=>{ const d=derived(c); return `<tr>
+      <td><input type="checkbox" ${c.selected?'checked':''} onchange="cases['${id}'].selected=this.checked;persist()" title="Include in export"></td>
+      <td><b>${esc(c.p1.pid)||'<i>no ID</i>'}</b></td><td>${esc(c.p1.prefName||c.p1.name)}</td><td>${esc(c.p1.staff)}</td>
+      <td>${caseChips(c)}</td><td>${fmtDate(d.lastContact)}</td><td>${fmtDate(d.nextCourt)}</td>
+      <td>${new Date(c.updated).toLocaleString()}</td><td style="white-space:nowrap"><button class="btn small" onclick="openCase('${id}')">Open</button></td></tr>`; }).join('')+'</tbody></table></div>';
+  updateCount(); renderBackupUI();
+}
+function newCase(){
+  const id='c'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36);
+  cases[id]=blankCase(); cases[id].p1.pid=nextPid(); if(currentUser&&STAFF.includes(currentUser.name)) cases[id].p1.staff=currentUser.name;
+  logAct(cases[id],'Case created'); persist(); openCase(id);
+}
+function openCase(id){ currentId=id; activeTab='p1'; logAct(cases[id],'Case opened'); showView('case'); renderCase(); }
+function deleteCase(){ const c=cases[currentId]; if(!confirm(`Delete case ${c.p1.pid||'(no ID)'}? This cannot be undone. Consider "Save case file" first.`)) return; delete cases[currentId]; persist(); showView('home'); }
+async function archiveCase(){
+  const c=cases[currentId]; if(!c) return;
+  if(backupState!=='ok'){ alert('Connect the SharePoint backup folder first. Archiving removes the case from this computer, so it must be safely backed up before it can be archived.'); return; }
+  if(!confirm(`Archive case ${c.p1.pid||'(no ID)'}?\n\nIts backup file stays in the SharePoint folder with version history; the case is removed from this computer. Use "Load case file…" to bring it back.`)) return;
+  logAct(c,'Archived off this device'); await backupToFolder(true); if(backupState!=='ok'){ alert('Backup did not succeed. The case was NOT removed.'); return; }
+  delete cases[currentId]; localStorage.setItem(STORE_KEY,JSON.stringify(cases)); updateCount(); showView('home');
+}
+function printCase(){ activeTab='sum'; renderCase(); setTimeout(()=>window.print(),300); }
+
+/* =====================================================================
+   Form renderers
+   ===================================================================== */
+function fld(part,key,label,type,opts,hint,attrs){
+  const c=cases[currentId]; const val=(part==='root'?c[key]:c[part][key])??''; const oninput=`setVal('${part}','${key}',this.value)`; let control;
+  if(type==='select') control=`<select onchange="${oninput}">`+opts.map(o=>`<option value="${esc(o)}"${String(val)===String(o)?' selected':''}>${esc(o)||'—'}</option>`).join('')+'</select>';
+  else if(type==='textarea') control=`<textarea oninput="${oninput}" ${attrs||''}>${esc(val)}</textarea>`;
+  else control=`<input type="${type}" value="${esc(val)}" oninput="${oninput}" ${attrs||''}>`;
+  return `<div><label class="f">${esc(label)}</label>${control}${hint?`<div class="hint" style="margin:3px 0 0">${hint}</div>`:''}</div>`;
+}
+function multiFld(part,key,label,opts,hint){
+  const c=cases[currentId]; const cur=(part==='root'?c[key]:c[part][key])||[];
+  return `<div><label class="f">${esc(label)}</label><div class="checks">`+opts.map(o=>`<label><input type="checkbox" ${cur.includes(o)?'checked':''} onchange="toggleMulti('${part}','${key}',${JSON.stringify(o).replace(/"/g,'&quot;')},this.checked)"> ${esc(o)}</label>`).join('')+`</div>${hint?`<div class="hint" style="margin:3px 0 0">${hint}</div>`:''}</div>`;
+}
+function setVal(part,key,value){ const c=cases[currentId]; if(part==='p1'&&key==='intakeDate'&&value&&!csbgComplete(c)){ alert('Complete the CSBG eligibility and characteristics section before recording the intake date. Missing: '+csbgMissing(c).join(', ')); renderTab(); return; } if(part==='root') c[key]=value; else c[part][key]=value; if(part==='p1'&&['hhSize','monthlyIncome','incomeSources'].includes(key)) scheduleSave(); scheduleSave(); }
+function toggleMulti(part,key,opt,on){ const c=cases[currentId]; const obj=part==='root'?c:c[part]; const arr=obj[key]||(obj[key]=[]); const i=arr.indexOf(opt); if(on&&i<0) arr.push(opt); if(!on&&i>=0) arr.splice(i,1); scheduleSave(); }
+/* Generic row list editor: getArr() returns the array; schema = [{k,l,t,o,w}] */
+function listEditor(id, arr, schema, addLabel, opts){
+  opts=opts||{};
+  const rows=arr.map((row,i)=>`<tr>`+schema.map(s=>{ const v=row[s.k]??''; const on=`rowSet('${id}',${i},'${s.k}',this.value)`; let ctl;
+      if(s.t==='select') ctl=`<select onchange="${on}">`+s.o.map(o=>`<option value="${esc(o)}"${String(v)===String(o)?' selected':''}>${esc(o)||'—'}</option>`).join('')+'</select>';
+      else if(s.t==='textarea') ctl=`<textarea oninput="${on}">${esc(v)}</textarea>`;
+      else if(s.t==='multi') ctl=`<div class="checks" style="min-width:220px">`+s.o.map(o=>`<label><input type="checkbox" ${(v||[]).includes(o)?'checked':''} onchange="rowToggle('${id}',${i},'${s.k}',${JSON.stringify(o).replace(/"/g,'&quot;')},this.checked)"> ${esc(o)}</label>`).join('')+'</div>';
+      else if(s.t==='readonly') ctl=`<span>${esc(v)}</span>`;
+      else ctl=`<input type="${s.t||'text'}" value="${esc(v)}" oninput="${on}" ${s.a||''}>`;
+      return `<td style="${s.w?'min-width:'+s.w:''}">${ctl}</td>`; }).join('')+
+      `<td>${opts.rowActions?opts.rowActions(row,i):''}<button class="btn ghost small" onclick="rowDel('${id}',${i})">✕</button></td></tr>`).join('');
+  return `<div class="tablewrap"><table><thead><tr>${schema.map(s=>`<th>${esc(s.l)}</th>`).join('')}<th></th></tr></thead><tbody>${rows||`<tr><td colspan="${schema.length+1}" class="hint">None yet.</td></tr>`}</tbody></table></div>
+    <button class="btn secondary small" style="margin-top:8px" onclick="rowAdd('${id}')">+ ${esc(addLabel)}</button>`;
+}
+const LISTS = {}; // id -> {get:()=>array, blank:()=>obj}
+function rowSet(id,i,k,v){ LISTS[id].get()[i][k]=v; scheduleSave(); }
+function rowToggle(id,i,k,opt,on){ const r=LISTS[id].get()[i]; const arr=r[k]||(r[k]=[]); const j=arr.indexOf(opt); if(on&&j<0) arr.push(opt); if(!on&&j>=0) arr.splice(j,1); scheduleSave(); }
+function rowDel(id,i){ if(!confirm('Remove this row?')) return; LISTS[id].get().splice(i,1); scheduleSave(); renderTab(); }
+function rowAdd(id){ LISTS[id].get().push(LISTS[id].blank()); scheduleSave(); renderTab(); }
+
+/* =====================================================================
+   Tabs
+   ===================================================================== */
+const TABS=[['p1','1 · Intake'],['p2','2 · Authorization'],['p3','3 · Assessment'],['p4','4 · Diversion Plan'],['p5','5 · Progress Notes'],['p6','6 · Referrals'],['p7','7 · Justice Coordination'],['p8','8 · Closure & Outcomes'],['p9','9 · Checklist & QA'],['sum','Summary & Export']];
+function renderCase(){
+  document.getElementById('tabBar').innerHTML=TABS.map(([k,l])=>`<button id="tab_${k}" class="${activeTab===k?'active':''}" onclick="activeTab='${k}';renderCase()">${l}<span class="dot"></span></button>`).join('');
+  renderCaseHeader(); refreshTabDots(); renderTab();
+}
+function renderCaseHeader(){ const c=cases[currentId]; document.getElementById('caseTitle').textContent=(c.p1.pid||'New case')+(c.p1.prefName||c.p1.name?' · '+(c.p1.prefName||c.p1.name):''); document.getElementById('caseChips').innerHTML=caseChips(c); }
+function refreshTabDots(){ const c=cases[currentId]; TABS.forEach(([k])=>{ const el=document.querySelector(`#tab_${k} .dot`); if(el) el.className='dot'+(k!=='sum'&&tabDone(c,k)?' done':''); }); }
+function renderTab(){ const body=document.getElementById('tabBody'); const fn={p1:tabIntake,p2:tabAuth,p3:tabAssess,p4:tabPlan,p5:tabNotes,p6:tabRefs,p7:tabJustice,p8:tabClosure,p9:tabQA,sum:tabSummary}[activeTab]; body.innerHTML=fn(cases[currentId]); }
+
+function tabIntake(c){
+  const d=derived(c);
+  return `<div class="card"><h2>Enrollment inquiry and initial contact</h2>
+    <p class="hint">Initial contact is due within two business days of the inquiry${d.initialDue?` (by <b>${fmtDate(d.initialDue)}</b>)`:''}. If it could not be made, record the reason.</p>
+    ${d.initialOverdue?'<div class="banner bad">Initial contact is overdue. Log the attempt or the reason below.</div>':''}
+    <div class="grid c3">
+      ${fld('p1','pid','Participant ID','text',null,'Assigned automatically; the only identifier used outside this tool')}
+      ${fld('p1','inquiryDate','Enrollment inquiry date','date')}
+      ${fld('p1','referralSource','Referral source','select',REFERRAL_SOURCES)}
+      ${fld('p1','referralContact','Referring contact (name, role)','text')}
+      ${fld('p1','staff','Assigned staff','select',STAFF)}
+      ${fld('p1','intakeMethod','Intake method','select',['','Virtual','In person','Phone'])}
+    </div>
+    <h3>Contact attempts</h3>
+    <div class="grid c3">
+      ${fld('p1','c1Date','Attempt 1 date','date')}${fld('p1','c1Method','Method','select',CONTACT_METHODS)}${fld('p1','c1Result','Result','select',CONTACT_RESULTS)}
+      ${fld('p1','c2Date','Attempt 2 date','date')}${fld('p1','c2Method','Method','select',CONTACT_METHODS)}${fld('p1','c2Result','Result','select',CONTACT_RESULTS)}
+      ${fld('p1','c3Date','Attempt 3 date','date')}${fld('p1','c3Method','Method','select',CONTACT_METHODS)}${fld('p1','c3Result','Result','select',CONTACT_RESULTS)}
+    </div>
+    <div class="grid c3" style="margin-top:12px">
+      ${fld('p1','initialContactDate','Initial contact completed','date')}
+      ${fld('p1','initialContactReason','If not within two business days, reason','text')}
+      ${fld('p1','intakeDate','Intake completed (enrollment date)','date',null,csbgComplete(c)?'Sets the case to Active and starts the twelve-month new-arrest window':'Locked until the CSBG eligibility section below is complete')}
+    </div></div>
+  <div class="card"><h2>Participant profile</h2>
+    <div class="grid c3">
+      ${fld('p1','name','Legal name','text')}${fld('p1','prefName','Preferred name','text')}
+      ${fld('p1','phone','Phone','tel')}${fld('p1','email','Email','email')}${fld('p1','prefContact','Preferred contact method','select',CONTACT_METHODS)}
+      ${fld('p1','housing','Housing situation','select',['','Rent','Own','Staying with others','Transitional housing','Shelter','Unsheltered','Home detention at residence','Other'])}
+      ${fld('p1','address','Street address','text')}${fld('p1','city','City','text')}${fld('p1','zip','ZIP','text')}
+      ${fld('p1','emergencyName','Emergency contact','text')}${fld('p1','emergencyPhone','Emergency contact phone','tel')}
+    </div>
+  </div>
+  <div class="card warnbox"><h2>CSBG eligibility and characteristics (required before enrollment)</h2>
+    <p class="hint">Required for the CSBG Annual Report (Module 4, Sections C and D) and for empowOR. The intake date and progress notes stay locked until every item here is complete. Record document types and dates only; never record ID numbers, Social Security numbers, or account numbers.</p>
+    ${csbgComplete(c)?'<div class="callout" style="border-color:#bfe3c6;background:#e9f6ec">All CSBG items complete. FPL: <b>'+fplPct(c)+'%</b> ('+fplBand(fplPct(c))+') for a household of '+esc(c.p1.hhSize)+' against the '+FPL_YEAR+' guidelines.</div>':'<div class="banner">Still missing: '+csbgMissing(c).map(esc).join(', ')+'.</div>'}
+    <h3>Identification</h3>
+    <div class="grid c4">
+      ${fld('p1','idType','Identification type','select',ID_TYPES)}${fld('p1','idVerifiedDate','ID verified date','date')}${fld('p1','idCopyOnFile','Copy in paper file','select',YN)}${fld('p1','idVerifiedBy','Verified by','select',STAFF)}
+      ${fld('p1','residencyVerified','Anne Arundel County residency verified','select',['','Yes','No','Pending'])}${fld('p1','dob','Date of birth','date',null,c.p1.dob?'Age '+ageOf(c.p1.dob):'')}
+    </div>
+    <h3>Household</h3>
+    <div class="grid c4">
+      ${fld('p1','hhType','Household type','select',HH_TYPES)}${fld('p1','hhSize','Household size','number',null,null,'min="1" max="30"')}${fld('p1','hhAdults','Adults (18+)','number',null,null,'min="0"')}${fld('p1','hhChildren','Children (under 18)','number',null,null,'min="0"')}${fld('p1','hhSeniors','Seniors (60+)','number',null,null,'min="0"')}
+    </div>
+    <h3>Income (gross household income before taxes)</h3>
+    ${multiFld('p1','incomeSources','Sources of household income (select all)',INCOME_SOURCES)}
+    <div class="grid c4" style="margin-top:10px">
+      ${fld('p1','monthlyIncome','Total gross monthly household income ($)','number',null,'Enter 0 with a zero-income self-declaration','min="0" step="1"')}
+      <div><label class="f">Federal poverty level</label><div><b>${c.p1.hhSize?fplPct(c)+'%':'—'}</b> ${c.p1.hhSize?'('+fplBand(fplPct(c))+')':''} <div class="hint">${FPL_YEAR} guideline for household of ${esc(c.p1.hhSize||'?')}: $${fplAnnual(c.p1.hhSize).toLocaleString()}/yr. Program limit ${CSBG_INCOME_LIMIT_PCT}%.</div></div></div>
+      ${fld('p1','incomeVerifiedDate','Income verified date','date')}${fld('p1','incomeVerifiedBy','Verified by','select',STAFF)}
+    </div>
+    <div style="margin-top:10px">${multiFld('p1','incomeDocs','Income verification documents received (types only)',INCOME_DOCS)}</div>
+    <div style="margin-top:10px">${multiFld('p1','nonCash','Non-cash benefits received',NONCASH)}</div>
+    <h3>Eligibility determination</h3>
+    <div class="grid c3">${fld('p1','eligDetermination','Determination','select',ELIG)}${fld('p1','eligDate','Determination date','date')}${fld('p1','eligBy','Determined by','select',STAFF)}</div>
+    ${c.p1.hhSize&&fplPct(c)>CSBG_INCOME_LIMIT_PCT&&c.p1.eligDetermination==='Meets required program guidelines'?'<div class="banner bad">Income is above '+CSBG_INCOME_LIMIT_PCT+'% FPL but the determination says Meets guidelines. Confirm the categorical-eligibility basis with the CSBG Compliance Manager and note it in the case notes.</div>':''}
+    <h3>Individual characteristics</h3>
+    <div class="grid c3">
+      ${fld('p1','gender','Gender','select',['','Woman','Man','Nonbinary','Another identity','Declined'])}
+      ${fld('p1','ethnicity','Ethnicity','select',['','Hispanic/Latino','Not Hispanic/Latino','Declined'])}
+      ${fld('p1','language','Primary language','text')}
+      ${fld('p1','edlevel','Education level','select',ED_LEVELS)}
+      ${fld('p1','workStatus','Work status','select',WORK_STATUS)}
+      ${fld('p1','disability','Disabling condition','select',['','Yes','No','Unknown'])}
+      ${fld('p1','veteran','Military status','select',['','Veteran','Active duty','Never served','Unknown'])}
+      ${fld('p1','insurance','Health insurance','select',['','Yes','No','Unknown'])}
+      ${fld('p1','insuranceType','Insurance type (if yes)','select',INSURANCE_TYPES)}
+    </div>
+    ${multiFld('p1','race','Race (select all that apply)',['American Indian/Alaska Native','Asian','Black/African American','Native Hawaiian/Pacific Islander','White','Another race','Declined'])}
+    <div style="margin-top:10px">${multiFld('p1','servicesInterested','Services requested at intake (from the intake form)',['Employment / workforce development','Behavioral health / substance use treatment','Expungement services','Vital identification','Transitional housing','Medical insurance','Other'])}</div>
+  </div>
+  <div class="card"><h2>Justice status</h2>
+    <p class="hint">Mark each item Verified or Participant-reported. Public case information is checked against the source, never assumed. Record no clinical or protected detail here.</p>
+    <div class="grid c3">
+      ${fld('p1','institution','Institution reporting to','select',INSTITUTIONS)}
+      ${fld('p1','supervision','Supervision status','select',SUPERVISION)}
+      ${fld('p1','supervisionCM','Supervision officer / case manager','text')}
+      ${fld('p1','supervisionCMPhone','Officer contact','text')}
+      ${fld('p1','caseNumber','Case number(s)','text')}${fld('p1','caseNumberVR','Case number','select',VR)}
+      ${fld('p1','court','Court / jurisdiction','text')}
+      ${fld('p1','chargeCategory','Charge category (general)','text')}${fld('p1','chargeVR','Charge information','select',VR)}
+      ${fld('p1','nextCourtDate','Next court date','date')}
+      ${fld('p1','counselName','Defense counsel','text')}${fld('p1','counselContact','Counsel contact','text')}${fld('p1','counselVR','Counsel information','select',VR)}
+      ${fld('p1','publicInfoSource','Public case information source reviewed','text')}${fld('p1','publicInfoDate','Date reviewed','date')}
+    </div>
+    ${fld('p1','restrictions','Home-detention or supervision restrictions relevant to programming','textarea')}
+  </div>
+  <div class="card"><h2>Participant voice (Diversion Plan section B)</h2>
+    <div class="grid c2">
+      ${fld('p1','concerns','Immediate concerns','textarea')}${fld('p1','goals','Participant-stated goals','textarea')}
+      ${fld('p1','strengths','Strengths and supports','textarea')}${fld('p1','change','What the participant believes needs to change','textarea')}
+    </div></div>`;
+}
+function tabAuth(c){
+  return `<div class="card"><h2>Authorization to release information</h2>
+    <p class="hint">Nothing goes to any justice-system party without a signed authorization that names that recipient. Behavioral health and substance use records require a separate, specific authorization. Signed originals stay in the paper record.</p>
+    <div class="grid c3">
+      ${fld('p2','status','Authorization status','select',['','On file','Not yet obtained','Declined','Expired or revoked','Not required for current activity'])}
+      ${fld('p2','form','Form used','select',['','Mutual Authorization (OPD)','AACCAA release of information','Other'])}
+      ${fld('p2','signedDate','Signed date','date')}${fld('p2','expires','Expiration or revocation date','date')}
+      ${fld('p2','paperLocation','Paper original location','text')}
+    </div>
+    ${multiFld('p2','recipients','Recipients covered by the authorization',CORR_ROLES.filter(Boolean))}
+    <div class="grid c2" style="margin-top:12px">
+      ${fld('p2','scope','Scope and limits (what may be shared)','textarea')}
+      ${fld('p2','protectedFlag','Protected records involved (behavioral health, SUD)?','select',YN)}
+      ${fld('p2','protectedAuth','If yes, separate authorization status','select',['','On file','Not yet obtained','Declined','Not applicable'])}
+    </div></div>`;
+}
+function tabAssess(c){
+  const needs=c.p3.needs;
+  const rows=DOMAINS.map(([k,l])=>{ const n=needs[k]||(needs[k]={}); return `<tr><td><b>${l}</b></td>
+    <td><textarea oninput="cases[currentId].p3.needs['${k}'].need=this.value;scheduleSave()">${esc(n.need)}</textarea></td>
+    <td><textarea oninput="cases[currentId].p3.needs['${k}'].strength=this.value;scheduleSave()">${esc(n.strength)}</textarea></td>
+    <td><select onchange="cases[currentId].p3.needs['${k}'].priority=this.value;scheduleSave()">${PRIORITY.map(o=>`<option ${n.priority===o?'selected':''}>${o}</option>`).join('')}</select></td></tr>`; }).join('');
+  return `<div class="card"><h2>Assessments</h2>
+    <div class="grid c3">
+      ${fld('p3','onetDate','O*NET Interest Profiler date','date')}${fld('p3','onetAreas','Top interest areas','text')}${fld('p3','onetVR','','select',VR)}
+      ${fld('p3','riskName','Risk and needs instrument','text',null,'Configurable. Leave as the DDF instrument name once provided; not required for enrollment.')}
+      ${fld('p3','riskDate','Instrument date','date')}${fld('p3','riskVR','','select',VR)}
+      ${fld('p3','edGrade','Highest grade completed','text')}${fld('p3','edCreds','Credentials and certifications','text')}${fld('p3','edVerified','Education','select',VR)}
+    </div>
+    <div class="grid c2" style="margin-top:10px">${fld('p3','onetFindings','Interest Profiler key findings','textarea')}${fld('p3','riskResult','Risk and needs summary (no clinical detail)','textarea')}</div>
+    ${fld('p3','otherAssess','Other assessment or screening','textarea')}
+  </div>
+  <div class="card"><h2>Needs and barriers screen (Diversion Plan section D)</h2>
+    <div class="tablewrap"><table><thead><tr><th>Domain</th><th>Current need or barrier</th><th>Current strength</th><th>Priority</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </div>`;
+}
+function tabPlan(c){
+  LISTS.goals={get:()=>cases[currentId].p4.goals, blank:()=>({goal:'',domain:'',barrier:'',intervention:'',party:'',target:'',evidence:'',status:'Not started',completed:''})};
+  LISTS.commits={get:()=>cases[currentId].p4.commitments, blank:()=>({due:'',commitment:'',support:'',result:''})};
+  LISTS.reviews={get:()=>cases[currentId].p4.reviews, blank:()=>({date:today(),progress:'',changes:'',commitments:'',next:''})};
+  const dom=['',...DOMAINS.map(d=>d[1])];
+  return `<div class="card"><h2>Individualized Diversion Plan</h2>
+    <div class="grid c4">${fld('p4','startDate','Plan start date','date')}${fld('p4','version','Plan version','text')}${fld('p4','lastReview','Last review','date')}${fld('p4','nextReview','Next review due','date')}</div>
+    <div class="grid c2" style="margin-top:10px">${fld('p4','ackDate','Participant acknowledged plan (signature on paper) date','date')}</div>
+    <h3>Goals, barriers, and interventions (section E)</h3>
+    ${listEditor('goals',c.p4.goals,[{k:'goal',l:'Goal',t:'textarea',w:'200px'},{k:'domain',l:'Domain',t:'select',o:dom},{k:'barrier',l:'Barrier',t:'textarea',w:'160px'},{k:'intervention',l:'Intervention / step',t:'textarea',w:'180px'},{k:'party',l:'Responsible',t:'select',o:['','Participant','Staff','Partner','Shared']},{k:'target',l:'Target date',t:'date'},{k:'evidence',l:'Evidence of completion',t:'text',w:'140px'},{k:'status',l:'Status',t:'select',o:['Not started','In progress','Completed','Dropped']},{k:'completed',l:'Completed',t:'date'}],'Add goal')}
+    <h3>Weekly commitments (section F)</h3>
+    ${listEditor('commits',c.p4.commitments,[{k:'due',l:'Due',t:'date'},{k:'commitment',l:'Participant commitment',t:'textarea',w:'220px'},{k:'support',l:'AACCAA support',t:'textarea',w:'200px'},{k:'result',l:'Result / evidence',t:'text',w:'160px'}],'Add commitment')}
+    <h3>Plan reviews (section H)</h3>
+    ${listEditor('reviews',c.p4.reviews,[{k:'date',l:'Review date',t:'date'},{k:'progress',l:'Progress since last review',t:'textarea',w:'200px'},{k:'changes',l:'Plan changes',t:'textarea',w:'180px'},{k:'commitments',l:'Participant commitments',t:'textarea',w:'180px'},{k:'next',l:'Next review',t:'date'}],'Add review')}
+  </div>`;
+}
+function tabNotes(c){
+  const d=derived(c);
+  const goalOpts=c.p4.goals.map(g=>g.goal).filter(Boolean);
+  const notes=c.p5.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const cards=notes.map(n=>{ const i=c.p5.indexOf(n); const S=(k,v)=>`cases[currentId].p5[${i}].${k}=this.value;scheduleSave()`;
+    const sel=(k,opts)=>`<select onchange="${S(k)}">${opts.map(o=>`<option value="${esc(o)}" ${n[k]===o?'selected':''}>${esc(o)||'—'}</option>`).join('')}</select>`;
+    const inp=(k,t)=>`<input type="${t||'text'}" value="${esc(n[k])}" oninput="${S(k)}">`; const ta=(k)=>`<textarea oninput="${S(k)}">${esc(n[k])}</textarea>`;
+    const chk=(k,opts)=>`<div class="checks">${opts.map(o=>`<label><input type="checkbox" ${(n[k]||[]).includes(o)?'checked':''} onchange="noteToggle(${i},'${k}',${JSON.stringify(o).replace(/"/g,'&quot;')},this.checked)"> ${esc(o)}</label>`).join('')}</div>`;
+    return `<div class="card" style="border-left:4px solid var(--blue)"><div class="toolbar"><b>${n.date?fmtDate(n.date):'New note'}</b> <span class="chip info">${esc(n.method||'')}</span> <span class="chip ${n.engagement==='Engaged'?'ok':n.engagement?'warn':''}">${esc(n.engagement||'')}</span><span class="spacer"></span><button class="btn ghost small" onclick="delNote(${i})">Remove</button></div>
+      <div class="grid c4"><div><label class="f">Date</label>${inp('date','date')}</div><div><label class="f">Staff</label>${sel('staff',STAFF)}</div><div><label class="f">Method</label>${sel('method',CONTACT_METHODS)}</div><div><label class="f">Duration (min)</label>${inp('duration','number')}</div>
+        <div><label class="f">Case phase</label>${sel('phase',PHASES)}</div><div><label class="f">Purpose</label>${inp('purpose')}</div><div><label class="f">Engagement result</label>${sel('engagement',ENGAGEMENT)}</div><div><label class="f">Legal or supervision status change</label>${sel('legalChange',['','None','Yes (describe in verified info)'])}</div></div>
+      <div class="grid c2" style="margin-top:10px"><div><label class="f">Significant participant-reported information</label>${ta('reported')}</div><div><label class="f">Verified information and source</label>${ta('verified')}</div>
+        <div><label class="f">Verification source</label>${inp('verifiedSource')}</div><div><label class="f">Barrier identified</label>${ta('barrier')}</div>
+        <div><label class="f">Staff action taken</label>${ta('action')}</div><div><label class="f">Participant commitment</label>${ta('commitment')}</div><div><label class="f">Staff follow-up owed</label>${ta('followUp')}</div><div><label class="f">Progress against plan goals</label>${ta('progress')}</div></div>
+      <div style="margin-top:10px"><label class="f">Goals addressed</label>${goalOpts.length?chk('goalsAddressed',goalOpts):'<span class="hint">Add goals on the Diversion Plan tab.</span>'}</div>
+      <div style="margin-top:10px"><label class="f">Services delivered this contact (coded for empowOR)</label>${chk('services',SERVICE_LABELS)}</div>
+      <div style="margin-top:10px"><label class="f">Outcome events this period</label>${chk('outcomes',OUTCOME_EVENTS)}</div>
+      <div class="grid c3" style="margin-top:10px"><div><label class="f">Outcome date</label>${inp('outcomeDate','date')}</div><div><label class="f">Outcome verification source</label>${inp('outcomeSource')}</div><div><label class="f">Justice-system communication proposed?</label>${sel('justiceComm',YN)}${n.justiceComm==='Yes'?'<div class="hint">Draft it on the Justice Coordination tab and request CEASO approval.</div>':''}</div>
+        <div><label class="f">Next contact date</label>${inp('nextDate','date')}</div><div><label class="f">Next method</label>${sel('nextMethod',CONTACT_METHODS)}</div><div><label class="f">Next focus</label>${inp('nextFocus')}</div></div></div>`; }).join('');
+  return `<div class="card"><h2>Progress notes</h2><p class="hint">One note per substantive contact. ${d.daysSince===null?'No substantive contact logged yet.':d.daysSince+' day(s) since last contact.'} Weekly cadence is the standard.</p>
+    ${d.contactLapsed?'<div class="banner">Seven or more days without a substantive contact. Log the contact or the re-engagement attempt.</div>':''}
+    <button class="btn" onclick="addNote()">+ New progress note</button></div>${cards}`;
+}
+function addNote(){ const c=cases[currentId]; if(!csbgComplete(c)){ alert('Progress notes open after the CSBG eligibility and characteristics section on the Intake tab is complete. Missing: '+csbgMissing(c).join(', ')); return; } c.p5.push({date:today(),staff:c.p1.staff||'',method:'',duration:'',phase:'Active case management',purpose:'',reported:'',verified:'',verifiedSource:'',legalChange:'',progress:'',barrier:'',action:'',commitment:'',followUp:'',goalsAddressed:[],services:['Case management'],outcomes:[],outcomeDate:'',outcomeSource:'',justiceComm:'',engagement:'',nextDate:'',nextMethod:'',nextFocus:''}); logAct(c,'Progress note added'); scheduleSave(); renderTab(); }
+function delNote(i){ if(!confirm('Remove this note?')) return; cases[currentId].p5.splice(i,1); scheduleSave(); renderTab(); }
+function noteToggle(i,k,opt,on){ const n=cases[currentId].p5[i]; const arr=n[k]||(n[k]=[]); const j=arr.indexOf(opt); if(on&&j<0) arr.push(opt); if(!on&&j>=0) arr.splice(j,1); scheduleSave(); }
+function tabRefs(c){
+  LISTS.refs={get:()=>cases[currentId].p6, blank:()=>({date:today(),domain:'',provider:'',purpose:'',service:'',staff:cases[currentId].p1.staff||'',connectedDate:'',status:'Issued',outcome:'',gocpp:'',notes:''})};
+  return `<div class="card"><h2>Referrals</h2><p class="hint">A referral counts when it is tracked to connection and outcome. Update the status until it closes. For behavioral health and substance use, record status and connection only.</p>
+    ${listEditor('refs',c.p6,[{k:'date',l:'Issued',t:'date'},{k:'domain',l:'Domain',t:'select',o:['',...DOMAINS.map(d=>d[1])]},{k:'provider',l:'Provider / partner',t:'text',w:'150px'},{k:'purpose',l:'Purpose',t:'text',w:'150px'},{k:'service',l:'empowOR service',t:'select',o:['',...SERVICE_LABELS]},{k:'staff',l:'Staff',t:'select',o:STAFF},{k:'connectedDate',l:'Connected',t:'date'},{k:'status',l:'Status',t:'select',o:REF_STATUS},{k:'outcome',l:'Outcome',t:'text',w:'150px'},{k:'gocpp',l:'GOCPP measure',t:'select',o:['',...GOCPP.map(g=>g[1])]}],'Add referral')}
+  </div>`;
+}
+function tabJustice(c){
+  LISTS.ms={get:()=>cases[currentId].p7.milestones, blank:()=>({date:'',type:'',outcome:'',attend:'',approvedBy:'',purpose:'',planUpdate:''})};
+  const auth=c.p2, covered=auth.status==='On file'?(auth.recipients||[]):[];
+  const rows=c.p7.corr.map((x,i)=>{ const S=(k)=>`corrSet(${i},'${k}',this.value)`; const approved=APPROVED.includes(x.disposition); const authOk=covered.includes(x.role);
+    const sel=(k,opts,dis)=>`<select ${dis?'disabled':''} onchange="${S(k)}">${opts.map(o=>`<option value="${esc(o)}" ${x[k]===o?'selected':''}>${esc(o)||'—'}</option>`).join('')}</select>`;
+    const inp=(k,t,dis)=>`<input type="${t||'text'}" ${dis?'disabled':''} value="${esc(x[k])}" oninput="${S(k)}">`;
+    return `<div class="card" style="border-left:4px solid ${approved?'var(--ok)':x.disposition==='Pending CEASO approval'?'var(--warn)':'var(--line)'}">
+      <div class="toolbar"><b>${esc(x.type||'Correspondence')}</b> to <b>${esc(x.role||'?')}</b> <span class="chip ${approved?'ok':x.disposition==='Pending CEASO approval'?'warn':''}">${esc(x.disposition)}</span><span class="spacer"></span>
+        ${x.disposition==='Draft'||x.disposition==='Revise and resubmit'?`<button class="btn small" ${authOk?'':'disabled title="Authorization does not cover this recipient"'} onclick="requestApproval(${i})">Request CEASO approval</button>`:''}
+        <button class="btn ghost small" onclick="corrDel(${i})">Remove</button></div>
+      ${!authOk&&x.role?`<div class="banner bad">The participant's authorization on file does not cover <b>${esc(x.role)}</b>. Obtain authorization (Tab 2) before requesting approval.</div>`:''}
+      <div class="grid c4"><div><label class="f">Date drafted</label>${inp('date','date')}</div><div><label class="f">Recipient role</label>${sel('role',CORR_ROLES)}</div><div><label class="f">Recipient (name, office)</label>${inp('recipient')}</div><div><label class="f">Type</label>${sel('type',CORR_TYPES)}</div>
+        <div><label class="f">Draft file name (SharePoint)</label>${inp('draftFile')}</div><div><label class="f">Requested send-by date</label>${inp('sendBy','date')}</div><div><label class="f">Authorization confirmed</label>${authOk?'<span class="chip ok">Covered</span>':'<span class="chip bad">Not covered</span>'}</div><div><label class="f">Requested on</label><span>${esc(fmtDate(x.requestedOn))}</span></div></div>
+      <h4>CEASO disposition</h4>
+      <div class="grid c4"><div><label class="f">Disposition</label>${sel('disposition',DISPOSITIONS)}</div><div><label class="f">Approval date</label>${inp('approvalDate','date')}</div><div><label class="f">CEASO comments</label>${inp('comments')}</div><div></div>
+        <div><label class="f">Final sent date</label>${inp('sentDate','date',!approved)}${!approved?'<div class="hint">Locked until the disposition is Approved.</div>':''}</div><div><label class="f">Final file name</label>${inp('finalFile','text',!approved)}</div></div></div>`; }).join('');
+  return `<div class="card"><h2>Justice-system correspondence</h2>
+    <p class="hint">Every letter, email, report, or verification to defense counsel, the court, the State's Attorney, or a supervision agency is logged here, sent to the CEASO for approval, and released only after approval. Staff do not give legal advice, predict outcomes, or advocate for a sentence.</p>
+    <div class="callout">Authorization on file covers: ${covered.length?covered.map(esc).join(', '):'<b>no recipients</b>'}.</div>
+    <button class="btn" onclick="addCorr()">+ New correspondence</button></div>${rows}
+  <div class="card"><h2>Court and supervision milestones</h2>
+    ${listEditor('ms',c.p7.milestones,[{k:'date',l:'Date',t:'date'},{k:'type',l:'Type',t:'select',o:MILESTONE_TYPES},{k:'outcome',l:'Outcome (verified)',t:'textarea',w:'200px'},{k:'attend',l:'Staff attending?',t:'select',o:YN},{k:'approvedBy',l:'Attendance approved by',t:'text'},{k:'purpose',l:'Purpose of attendance',t:'text',w:'160px'},{k:'planUpdate',l:'Plan updated after',t:'date'}],'Add milestone')}
+  </div>`;
+}
+function addCorr(){ const c=cases[currentId]; c.p7.corr.push({date:today(),role:'',recipient:'',type:'',draftFile:'',sendBy:'',disposition:'Draft',requestedOn:'',approvalDate:'',comments:'',sentDate:'',finalFile:''}); logAct(c,'Correspondence drafted'); scheduleSave(); renderTab(); }
+function corrSet(i,k,v){ const x=cases[currentId].p7.corr[i]; if(k==='sentDate'&&v&&!APPROVED.includes(x.disposition)){ alert('A sent date can only be recorded after CEASO approval.'); renderTab(); return; } x[k]=v; if(k==='disposition') logAct(cases[currentId],'Correspondence disposition: '+v); scheduleSave(); if(k==='role'||k==='disposition') renderTab(); }
+function corrDel(i){ if(!confirm('Remove this correspondence entry?')) return; cases[currentId].p7.corr.splice(i,1); scheduleSave(); renderTab(); }
+function requestApproval(i){
+  const c=cases[currentId], x=c.p7.corr[i]; if(!x.role||!x.type){ alert('Set the recipient role and type first.'); return; }
+  x.disposition='Pending CEASO approval'; x.requestedOn=today(); logAct(c,'CEASO approval requested: '+x.type+' to '+x.role); scheduleSave(); renderTab();
+  const subj=encodeURIComponent(`P2P approval request: ${x.type} to ${x.role} (${c.p1.pid})`);
+  const body=encodeURIComponent(`Participant ID: ${c.p1.pid}\nCommunication: ${x.type}\nRecipient role: ${x.role}\nRecipient: ${x.recipient||''}\nRequested send-by date: ${fmtDate(x.sendBy)||'not set'}\nAuthorization on file: ${c.p2.status} (${fmtDate(c.p2.signedDate)})\nDraft file (SharePoint): ${x.draftFile||'see case folder'}\nPrepared by: ${c.p1.staff||actor()}\n\nNo participant name is included in this message by design; open the case in the P2P Case Tool for detail.`);
+  window.open(`mailto:jhatch@aaccaa.info?subject=${subj}&body=${body}`);
+}
+function tabClosure(c){
+  const g=c.p8.gocpp; const enroll=c.p1.intakeDate; const arrestWindow=enroll?new Date(new Date(enroll).setFullYear(new Date(enroll).getFullYear()+1)).toISOString().slice(0,10):'';
+  const rows=GOCPP.map(([k,l])=>{ const x=g[k]||(g[k]={}); const S=(f)=>`cases[currentId].p8.gocpp['${k}'].${f}=this.value;scheduleSave()`;
+    return `<tr><td><b>${l}</b>${k==='newArrest'&&arrestWindow?`<div class="hint">Window ends ${fmtDate(arrestWindow)}</div>`:''}</td><td><select onchange="${S('yn')}">${['','Yes','No','Pending'].map(o=>`<option ${x.yn===o?'selected':''}>${o}</option>`).join('')}</select></td><td><input type="date" value="${esc(x.date)}" oninput="${S('date')}"></td><td><input type="text" value="${esc(x.src)}" oninput="${S('src')}" placeholder="Evidence source"></td></tr>`; }).join('');
+  return `<div class="card"><h2>GOCPP performance measures</h2><p class="hint">Each measure needs a date and an evidence source (employer letter, court record, provider confirmation, staff verification). Employment retention is checked at 30, 90, and 180 days from the placement date.</p>
+    <div class="tablewrap"><table><thead><tr><th>Measure</th><th>Status</th><th>Date</th><th>Evidence source</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card"><h2>Case closure</h2>
+    <div class="grid c3">${fld('p8','status','Closure status','select',CLOSURE)}${fld('p8','date','Closure date','date')}${fld('p8','finalNoteDate','Final note date','date')}</div>
+    <div class="grid c2" style="margin-top:10px">${fld('p8','reason','Closure narrative','textarea')}${fld('p8','outcomes','Primary outcomes achieved','textarea')}${fld('p8','followUp','Outstanding follow-up','textarea')}${fld('p8','continued','Services continuing after closure','textarea')}</div></div>`;
+}
+function tabQA(c){
+  const d=derived(c);
+  const auto0={0:!!c.p1.inquiryDate&&!!c.p1.referralSource,1:!!c.p1.initialContactDate&&!d.initialOverdue||!!c.p1.initialContactReason,2:!!c.p1.intakeDate&&!!c.p1.name,3:!!c.p1.supervision&&!!c.p1.caseNumberVR,4:!!c.p2.status,5:c.p2.protectedFlag!=='Yes'||!!c.p2.protectedAuth,6:d.assessDone,7:Object.values(c.p3.needs).some(n=>n.priority),8:c.p4.goals.length>0,9:!!c.p4.ackDate,10:c.p5.length>0&&!d.contactLapsed,11:c.p6.length===0||c.p6.every(r=>r.status&&r.status!=='Issued'),12:c.p7.milestones.length>0||!c.p1.nextCourtDate,13:c.p7.corr.every(x=>!x.sentDate||APPROVED.includes(x.disposition)),14:c.p7.corr.every(x=>!x.requestedOn||(c.p2.recipients||[]).includes(x.role)),15:Object.values(c.p8.gocpp).every(x=>x.yn!=='Yes'||(x.date&&x.src)),16:!c.p4.nextReview||c.p4.nextReview>=today()||c.p4.reviews.length>0,17:!!c.p1.phone,19:!d.closed||(!!c.p8.status&&!!c.p8.reason)};
+  const auto={0:auto0[0],1:csbgComplete(c)}; Object.keys(auto0).forEach(k=>{ if(+k>=1) auto[+k+1]=auto0[k]; });
+  const items=CHECKLIST.map((l,i)=>{ const a=auto[i]; const manual=c.p9.checklist['i'+i]; const checked=manual||a; return `<label style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--line)"><input type="checkbox" ${checked?'checked':''} ${a?'disabled':''} onchange="cases[currentId].p9.checklist['i${i}']=this.checked;scheduleSave();refreshTabDots()"> <span>${i+1}. ${esc(l)} ${a?'<span class="chip ok">auto</span>':''}</span></label>`; }).join('');
+  CHECKLIST.forEach((_,i)=>{ if(auto[i]) c.p9.checklist['i'+i]=true; });
+  LISTS.qa={get:()=>cases[currentId].p9.reviews, blank:()=>({date:today(),reviewer:'',areas:{},actions:'',due:'',disposition:'',followUp:''})};
+  const reviews=c.p9.reviews.map((r,i)=>`<div class="card" style="border-left:4px solid var(--navy)"><div class="toolbar"><b>QA review ${r.date?fmtDate(r.date):''}</b><span class="spacer"></span><button class="btn ghost small" onclick="rowDel('qa',${i})">Remove</button></div>
+    <div class="grid c3"><div><label class="f">Review date</label><input type="date" value="${esc(r.date)}" oninput="rowSet('qa',${i},'date',this.value)"></div><div><label class="f">Reviewer</label><select onchange="rowSet('qa',${i},'reviewer',this.value)">${STAFF.map(o=>`<option ${r.reviewer===o?'selected':''}>${o}</option>`).join('')}</select></div><div><label class="f">Disposition</label><select onchange="rowSet('qa',${i},'disposition',this.value)">${['','Meets standard','Corrective action required','Escalate to CEASO'].map(o=>`<option ${r.disposition===o?'selected':''}>${o}</option>`).join('')}</select></div></div>
+    <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Review area</th><th>Finding</th></tr></thead><tbody>${QA_AREAS.map((a,j)=>`<tr><td>${a}</td><td><select onchange="cases[currentId].p9.reviews[${i}].areas['a${j}']=this.value;scheduleSave()">${QA_STATUS.map(o=>`<option ${(r.areas||{})['a'+j]===o?'selected':''}>${o}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>
+    <div class="grid c3" style="margin-top:8px"><div><label class="f">Corrective actions</label><textarea oninput="rowSet('qa',${i},'actions',this.value)">${esc(r.actions)}</textarea></div><div><label class="f">Due</label><input type="date" value="${esc(r.due)}" oninput="rowSet('qa',${i},'due',this.value)"></div><div><label class="f">Follow-up review</label><input type="date" value="${esc(r.followUp)}" oninput="rowSet('qa',${i},'followUp',this.value)"></div></div></div>`).join('');
+  return `<div class="card"><h2>Case file checklist</h2><p class="hint">Items marked auto are checked by the tool from the record; the rest are checked by staff. ${d.checklistDone}/${CHECKLIST.length} complete.</p>${items}</div>
+    <div class="card"><h2>Supervisory QA review</h2><p class="hint">Monthly sample review by the DARS Director. Escalate to the CEASO when a finding involves justice-system communication or confidentiality.</p><button class="btn" onclick="rowAdd('qa')">+ New QA review</button></div>${reviews}`;
+}
+function tabSummary(c){
+  const d=derived(c), p=c.p1, ln=lastNote(c);
+  const pending=c.p7.corr.filter(x=>x.disposition==='Pending CEASO approval').map(x=>`${x.type} to ${x.role} (requested ${fmtDate(x.requestedOn)})`).join('; ')||'None';
+  const goals=c.p4.goals.filter(g=>g.status!=='Completed'&&g.status!=='Dropped').map(g=>`${g.goal} [${g.status}]`).join('; ')||'No open goals';
+  return `<div class="card"><h2>Case summary (the five handoff questions)</h2>
+    <div class="kv">
+      <b>Who</b><span>${esc(p.pid)} · ${esc(p.prefName||p.name)} · ${esc(p.supervision)} · ${esc(p.institution)} · staff ${esc(p.staff)}</span>
+      <b>Current plan</b><span>${esc(goals)}</span>
+      <b>Most recent contact</b><span>${ln?`${fmtDate(ln.date)} (${esc(ln.method)}): ${esc(ln.action||ln.purpose||'')}`:'None logged'}</span>
+      <b>Next step</b><span>${ln&&ln.nextDate?`${fmtDate(ln.nextDate)} ${esc(ln.nextMethod)}: ${esc(ln.nextFocus)}`:'Not set'}</span>
+      <b>Pending with the justice system</b><span>${esc(pending)}${d.nextCourt?` · next court ${fmtDate(d.nextCourt)}`:''}</span>
+    </div>
+    <h3>Status</h3>
+    <div class="kv"><b>Status</b><span>${d.status}</span><b>Authorization</b><span>${esc(c.p2.status||'not recorded')}</span><b>Assessment</b><span>${d.assessDone?'Complete':'Incomplete'}</span><b>Plan</b><span>${d.planDone?'Complete':'Incomplete'}</span><b>Days since contact</b><span>${d.daysSince??'n/a'}</span><b>Open referrals</b><span>${d.openRefs}</span><b>Checklist</b><span>${d.checklistDone}/${CHECKLIST.length}</span><b>Last QA</b><span>${fmtDate(d.lastQA)||'none'}</span></div>
+    <h3>Export this case</h3>
+    <div class="toolbar"><button class="btn secondary small" onclick="exportCaseJSON()">Save case file (JSON)</button><button class="btn secondary small" onclick="cases[currentId].selected=true;persist();exportDashboard()">Dashboard row</button><button class="btn secondary small" onclick="cases[currentId].selected=true;persist();exportOutcomes()">Outcomes row</button></div>
+    <h3>Case notes (free text, not exported)</h3>${fld('root','notes','','textarea')}
+    <h3>Activity log</h3><div class="log">${(c.log||[]).slice().reverse().map(e=>`${new Date(e.t).toLocaleString()} · ${esc(e.u)} · ${esc(e.a)}`).join('<br>')||'No activity yet.'}</div>
+  </div>`;
+}
+
+/* ---------- Boot ---------- */
+(async function(){
+  loadStore(); updateCount();
+  const ok=await initAuth(); if(!ok) return;
+  await restoreBackupFolder(); showView('home');
+})();
+if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
