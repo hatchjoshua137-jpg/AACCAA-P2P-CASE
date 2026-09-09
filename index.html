@@ -114,12 +114,13 @@
     <div id="backupBanner" class="banner" hidden></div>
     <div class="card">
       <h2>Caseload</h2>
-      <p class="hint">Every case here is part of the authorized program record. Participant ID is the only identifier that leaves this tool; never put names in email, texts, or file names.</p>
+      <p class="hint">Every case here is part of the authorized program record. Cases are shared through the SharePoint folder: anything a teammate saves appears here within a minute, and the case card shows who is editing. Participant ID is the only identifier that leaves this tool; never put names in email, texts, or file names.</p>
       <div class="toolbar">
         <button class="btn" onclick="newCase()">+ New Case</button>
         <input type="text" id="searchBox" placeholder="Search ID, name, staff…" style="max-width:280px" oninput="renderHome()">
         <span class="spacer"></span>
         <button id="backupBtn" class="btn secondary" onclick="connectBackupFolder()">Connect SharePoint backup folder…</button>
+        <button class="btn ghost" onclick="refreshFromSharePoint()">Refresh from SharePoint</button>
         <button class="btn ghost" onclick="exportAllCasesJSON()">Backup all cases (JSON)</button>
         <label class="btn ghost" style="margin:0">Load case file… <input type="file" accept=".json" hidden onchange="loadCaseFile(event)"></label>
       </div>
@@ -138,7 +139,7 @@
         <button class="btn secondary" onclick="exportCorrespondenceCSV()">Correspondence log</button>
       </div>
       <h3>Export for empowOR</h3>
-      <p class="hint">Import files match empowOR's sample layouts. <b>Import Households &amp; Participants first</b>, run Group Enrollment on that batch to enroll participants in "Pathway to Prosperity", then import Income, Case Notes, and Enrollment &amp; Services. IDs and the import source stay consistent across files.</p>
+      <p class="hint">Only cases with the CSBG section complete are exported. Import files match empowOR's sample layouts. <b>Import Households &amp; Participants first</b>, run Group Enrollment on that batch to enroll participants in "Pathway to Prosperity", then import Income, Case Notes, and Enrollment &amp; Services. IDs and the import source stay consistent across files.</p>
       <div class="toolbar">
         <button class="btn secondary" onclick="exportEmpowerHH()">1 · Households &amp; Participants</button>
         <button class="btn secondary" onclick="exportEmpowerIncome()">2 · Income</button>
@@ -172,6 +173,8 @@
       <h3>The rules the tool enforces</h3>
       <ul>
         <li>Initial contact is due within two business days of the enrollment inquiry. The case card turns amber when it is overdue.</li>
+        <li>CSBG eligibility and characteristics are required for CSBG reporting. A case with that section incomplete stays flagged on the case card and is left out of the empowOR export until it is finished.</li>
+        <li>Cases are shared through the SharePoint folder. The most recent save wins, so do not edit the same case at the same time; the card shows who has it open.</li>
         <li>A substantive contact is expected weekly. Seven or more days without a progress note flags the case.</li>
         <li>Any letter, email, or report to the court, defense counsel, the State's Attorney, or a supervision agency is drafted here, sent to the CEASO for approval, and cannot be marked as sent until the disposition is Approved.</li>
         <li>A correspondence request cannot be submitted to a recipient the participant's signed authorization does not cover.</li>
@@ -214,16 +217,17 @@
 const STORE_KEY = 'aaccaa_p2p_cases_v1';
 const AUTH_KEY  = 'aaccaa_p2p_auth_v1';
 const CASE_FORMAT = 'aaccaa-p2p-case';
+function deviceTag(){ let t=localStorage.getItem('aaccaa_p2p_device'); if(!t){ t=(currentUser&&currentUser.name?currentUser.name.split(' ')[0]:'device')+'-'+Math.random().toString(36).slice(2,6); localStorage.setItem('aaccaa_p2p_device',t); } return t.replace(/[^A-Za-z0-9_-]+/g,'_'); }
 
 /* ---------- Microsoft 365 sign-in (Entra ID, OAuth 2.0 code flow + PKCE) ----------
    Register a NEW single-page application in Entra for this tool (see README).
    Replace the three placeholders below with the values from that registration.
    Local file:// copies run without sign-in for training and development. */
 const AUTH = {
-  clientId: '0830f2b6-ee62-4b1f-9b52-91ab52b8e673',
+  clientId: 'REPLACE-WITH-P2P-APP-CLIENT-ID',
   tenantId: '9096f1e3-6489-408c-8a44-c01f086cf2a1',
-  redirectUri: 'https://hatchjoshua137-jpg.github.io/AACCAA-P2P-CASE/',
-  enforceHosts: ['hatchjoshua137-jpg.github.io'],
+  redirectUri: 'REPLACE-WITH-HOSTED-URL/',
+  enforceHosts: ['REPLACE-WITH-HOST'],
   maxAgeDays: 7,
 };
 let currentUser = null;
@@ -389,7 +393,7 @@ const EMP_ENR_HEADER = "RecordType,importSource,Record ID,HouseholdID,participan
    ===================================================================== */
 let cases = {}, currentId = null, activeTab = 'p1', saveTimer = null;
 function loadStore(){ try{ cases=JSON.parse(localStorage.getItem(STORE_KEY)||'{}'); }catch(e){ cases={}; } }
-function persist(){ localStorage.setItem(STORE_KEY,JSON.stringify(cases)); setStatus('Saved '+new Date().toLocaleTimeString()); updateCount(); backupToFolder(); }
+function persist(){ localStorage.setItem(STORE_KEY,JSON.stringify(cases)); setStatus('Saved '+new Date().toLocaleTimeString()); updateCount(); backupToFolder(false,[...pendingIds]); }
 function setStatus(t){ document.getElementById('saveStatus').textContent=t; }
 function updateCount(){ document.getElementById('caseCount').textContent=Object.keys(cases).length+' case(s) on this computer'; }
 function today(){ return new Date().toISOString().slice(0,10); }
@@ -417,14 +421,20 @@ function blankCase(){
     notes:''
   };
 }
+/* Participant IDs: P2P-<FY>-<staff letter><4 digits>. Each signed-in person issues only their own
+   sequence, so three laptops can create cases at once (or offline) without colliding. The sequence
+   is computed from every case on this laptop plus every case file in the SharePoint folder. */
+const STAFF_LETTERS = {'Namond Williams':'N','James DeBerry':'J','Joshua Hatch':'H'};
+let folderPids = new Set();
+function fyTag(){ const now=new Date(); return String((now.getMonth()>=6?now.getFullYear()+1:now.getFullYear())).slice(-2); }
+function staffLetter(){ const n=currentUser&&currentUser.name; if(n&&STAFF_LETTERS[n]) return STAFF_LETTERS[n]; if(n) return n.trim()[0].toUpperCase(); return 'D'; }
+function allKnownPids(){ const s=new Set(folderPids); for(const c of Object.values(cases)) if(c.p1.pid) s.add(c.p1.pid); return s; }
 function nextPid(){
-  const yy = String(new Date().getFullYear()+1).slice(-2); // fiscal-year style: FY27 -> 27
-  const fy = new Date().getMonth()>=6 ? yy : String(new Date().getFullYear()).slice(-2);
-  const nums = Object.values(cases).map(c=>c.p1.pid).filter(p=>p.startsWith('P2P-'+fy+'-')).map(p=>parseInt(p.slice(-4),10)).filter(n=>!isNaN(n));
-  const n = (nums.length?Math.max(...nums):0)+1;
-  return `P2P-${fy}-${String(n).padStart(4,'0')}`;
+  const fy=fyTag(), L=staffLetter(); const re=new RegExp('^P2P-'+fy+'-'+L+'(\\d{4})$');
+  let max=0; for(const p of allKnownPids()){ const m=re.exec(p); if(m) max=Math.max(max,parseInt(m[1],10)); }
+  return `P2P-${fy}-${L}${String(max+1).padStart(4,'0')}`;
 }
-
+function duplicatePids(){ const seen={}, dups=new Set(); for(const [id,c] of Object.entries(cases)){ const p=c.p1.pid; if(!p) continue; if(seen[p]) dups.add(p); seen[p]=id; } return dups; }
 /* ---------- Date helpers ---------- */
 function daysBetween(a,b){ if(!a||!b) return null; return Math.round((new Date(b)-new Date(a))/86400000); }
 function addBusinessDays(d,n){ const x=new Date(d); let k=0; while(k<n){ x.setDate(x.getDate()+1); if(x.getDay()!==0&&x.getDay()!==6) k++; } return x.toISOString().slice(0,10); }
@@ -460,7 +470,7 @@ function derived(c){
 function tabDone(c, tab){
   const p1=c.p1, d=derived(c);
   switch(tab){
-    case 'p1': return !!(p1.pid && p1.name && p1.intakeDate && p1.supervision && p1.staff && (p1.initialContactDate||p1.initialContactReason)) && csbgComplete(c);
+    case 'p1': return !!(p1.pid && p1.name && p1.intakeDate && p1.supervision && p1.staff && (p1.initialContactDate||p1.initialContactReason));
     case 'p2': return !!c.p2.status;
     case 'p3': return d.assessDone;
     case 'p4': return d.planDone && !!c.p4.ackDate;
@@ -521,7 +531,7 @@ function empowerHHRow(c){
     physicaladdressstate:p.address?'MD':'',physicaladdresszip:p.zip,physicaladdresscounty:p.address?'Anne Arundel':''});
   return EMP_HH_HEADER.map(h=>row[h]);
 }
-function exportEmpowerHH(){ download(`empowOR_P2P_Households_Participants_${stamp()}.csv`, toCSV(EMP_HH_HEADER, selectedCases().filter(c=>c.p1.pid&&c.p1.intakeDate).map(empowerHHRow))); }
+function exportEmpowerHH(){ download(`empowOR_P2P_Households_Participants_${stamp()}.csv`, toCSV(EMP_HH_HEADER, selectedCases().filter(c=>c.p1.pid&&c.p1.intakeDate&&csbgComplete(c)).map(empowerHHRow))); }
 function exportEmpowerIncome(){
   const rows=[];
   for(const c of selectedCases()){ const p=c.p1; if(!p.pid||!p.intakeDate) continue; const zero=(p.incomeSources||[]).includes('No income');
@@ -553,7 +563,7 @@ function exportAllCasesJSON(){ download(`P2P_all_cases_${stamp()}.json`, JSON.st
 function loadCaseFile(ev){
   const file=ev.target.files[0]; if(!file) return; const reader=new FileReader();
   reader.onload=()=>{ try{ const data=JSON.parse(reader.result); if(data.format!==CASE_FORMAT) throw new Error('Not a P2P case file'); let n=0;
-    for(const [id,c] of Object.entries(data.cases)){ const ex=cases[id]; if(ex&&ex.updated>c.updated&&!confirm(`Case ${c.p1.pid||id} on this computer is newer than the file. Overwrite with the file version?`)) continue; cases[id]=c; logAct(c,'Loaded from case file'); n++; }
+    for(const [id,c] of Object.entries(data.cases)){ markArchived(id,false); const ex=cases[id]; if(ex&&ex.updated>c.updated&&!confirm(`Case ${c.p1.pid||id} on this computer is newer than the file. Overwrite with the file version?`)) continue; cases[id]=c; logAct(c,'Loaded from case file'); n++; }
     persist(); renderHome(); alert(`Loaded ${n} case(s) from ${file.name}.`); }catch(e){ alert('Could not read that file: '+e.message); } };
   reader.readAsText(file); ev.target.value='';
 }
@@ -563,30 +573,56 @@ function loadCaseFile(ev){
    Automatic SharePoint backup (File System Access API)
    ===================================================================== */
 const FSA_SUPPORTED='showDirectoryPicker' in window;
-let backupDir=null, backupState='off', lastBackupAt=null, backupBusy=false, backupAgain=false;
+let backupDir=null, backupState='off', lastBackupAt=null, backupBusy=false, backupAgain=false, pendingIds=new Set(), lastInputAt=0, syncTimer=null;
+function archivedIds(){ try{ return new Set(JSON.parse(localStorage.getItem('aaccaa_p2p_archived')||'[]')); }catch(e){ return new Set(); } }
+function markArchived(id,on){ const a=archivedIds(); if(on) a.add(id); else a.delete(id); localStorage.setItem('aaccaa_p2p_archived',JSON.stringify([...a])); }
 function idb(){ return new Promise((res,rej)=>{ const rq=indexedDB.open('p2p-backup',1); rq.onupgradeneeded=()=>rq.result.createObjectStore('handles'); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
 async function idbSet(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const tx=db.transaction('handles','readwrite'); tx.objectStore('handles').put(v,k); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }
 async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const rq=db.transaction('handles').objectStore('handles').get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
 async function connectBackupFolder(){
   if(!FSA_SUPPORTED){ alert('This browser cannot connect a backup folder automatically. Use Microsoft Edge or Chrome, or back up manually with "Backup all cases (JSON)" into the SharePoint folder.'); return; }
-  try{ backupDir=await showDirectoryPicker({mode:'readwrite',id:'p2p-backup'}); await idbSet('dir',backupDir); backupState='ok'; await backupToFolder(true); renderBackupUI(); }catch(e){}
+  try{ const opts={mode:'readwrite',id:'p2p-backup'}; if(backupDir) opts.startIn=backupDir; backupDir=await showDirectoryPicker(opts); await idbSet('dir',backupDir); backupState='ok'; await writeFile(backupDir,'_connection_test.json',JSON.stringify({tool:'P2P Case Tool',connectedAt:new Date().toISOString(),device:navigator.platform},null,2)); lastBackupAt=new Date(); await syncFromFolder(); await backupToFolder(true); startSyncLoop(); renderBackupUI(); }catch(e){ if(e&&e.name!=='AbortError'){ backupState='error'; renderBackupUI(); } }
 }
 async function restoreBackupFolder(){
   if(!FSA_SUPPORTED){ renderBackupUI(); return; }
   try{ const h=await idbGet('dir'); if(!h){ renderBackupUI(); return; } const perm=await h.queryPermission({mode:'readwrite'});
-    if(perm==='granted'){ backupDir=h; backupState='ok'; backupToFolder(true); } else { backupDir=h; backupState='reconnect'; } }catch(e){ backupState='off'; }
+    if(perm==='granted'){ backupDir=h; backupState='ok'; await syncFromFolder(); backupToFolder(true); startSyncLoop(); } else { backupDir=h; backupState='reconnect'; } }catch(e){ backupState='off'; }
   renderBackupUI();
 }
-async function reconnectBackup(){ if(!backupDir) return connectBackupFolder(); try{ const perm=await backupDir.requestPermission({mode:'readwrite'}); if(perm==='granted'){ backupState='ok'; await backupToFolder(true); } }catch(e){ backupState='error'; } renderBackupUI(); }
+async function reconnectBackup(){ if(!backupDir) return connectBackupFolder(); try{ const perm=await backupDir.requestPermission({mode:'readwrite'}); if(perm==='granted'){ backupState='ok'; await writeFile(backupDir,'_connection_test.json',JSON.stringify({tool:'P2P Case Tool',reconnectedAt:new Date().toISOString()},null,2)); lastBackupAt=new Date(); await syncFromFolder(); await backupToFolder(true); startSyncLoop(); renderBackupUI(); return; } }catch(e){} /* Saved handle could not be reopened (common on macOS CloudStorage): re-pick, starting in the remembered folder. */ return connectBackupFolder(); }
 function safeName(s){ return (s||'unnamed').replace(/[^A-Za-z0-9._-]+/g,'_'); }
 async function writeFile(dir,name,content){ const fh=await dir.getFileHandle(name,{create:true}); const w=await fh.createWritable(); await w.write(content); await w.close(); }
-async function backupToFolder(force){
+async function backupToFolder(force, ids){
   if(!backupDir||(backupState!=='ok'&&!force)) return; if(backupBusy){ backupAgain=true; return; } backupBusy=true;
-  try{ for(const [id,c] of Object.entries(cases)){ await writeFile(backupDir,`P2P_case_${safeName(c.p1.pid||id)}.json`,JSON.stringify({format:CASE_FORMAT,version:1,cases:{[id]:c}},null,2)); }
-    await writeFile(backupDir,'_all_cases_backup.json',JSON.stringify({format:CASE_FORMAT,version:1,savedAt:new Date().toISOString(),cases},null,2));
+  try{ const targets=ids?ids:Object.keys(cases);
+    for(const id of targets){ const c=cases[id]; if(!c) continue; await writeFile(backupDir,`P2P_case_${safeName(c.p1.pid||id)}.json`,JSON.stringify({format:CASE_FORMAT,version:1,cases:{[id]:c}},null,2)); pendingIds.delete(id); }
+    await writeFile(backupDir,`_all_cases_backup_${deviceTag()}.json`,JSON.stringify({format:CASE_FORMAT,version:1,device:deviceTag(),savedAt:new Date().toISOString(),cases},null,2));
     backupState='ok'; lastBackupAt=new Date(); }catch(e){ backupState=(e&&e.name==='NotAllowedError')?'reconnect':'error'; }
-  backupBusy=false; renderBackupUI(); if(backupAgain){ backupAgain=false; backupToFolder(); }
+  backupBusy=false; renderBackupUI(); if(backupAgain){ backupAgain=false; backupToFolder(false,[...pendingIds]); }
 }
+/* Pull newer case files written by other laptops. Last write wins on the "updated" stamp. */
+async function syncFromFolder(){
+  if(!backupDir||backupState!=='ok') return 0; let changed=0; const archived=archivedIds();
+  try{ for await (const entry of backupDir.values()){
+      if(entry.kind!=='file'||!/^P2P_case_.*\.json$/.test(entry.name)) continue;
+      let data; try{ const f=await entry.getFile(); data=JSON.parse(await f.text()); }catch(e){ continue; }
+      if(!data||data.format!==CASE_FORMAT||!data.cases) continue;
+      for(const [id,remote] of Object.entries(data.cases)){
+        if(remote&&remote.p1&&remote.p1.pid) folderPids.add(remote.p1.pid);
+        if(archived.has(id)) continue;
+        const local=cases[id];
+        if(local&&pendingIds.has(id)) continue;                       // our unsaved edits win until written
+        if(id===currentId&&Date.now()-lastInputAt<15000) continue;     // never replace a case mid-typing
+        if(!local||(remote.updated||'')>(local.updated||'')){ cases[id]=remote; changed++; }
+      } }
+  }catch(e){ return changed; }
+  if(changed){ localStorage.setItem(STORE_KEY,JSON.stringify(cases)); updateCount();
+    if(!document.getElementById('viewHome').hidden) renderHome(); else if(currentId&&cases[currentId]){ renderCaseHeader(); refreshTabDots(); renderTab(); } }
+  return changed;
+}
+async function refreshFromSharePoint(){ const n=await syncFromFolder(); setStatus(n?`Pulled ${n} update(s) from SharePoint`:'Up to date with SharePoint'); }
+function startSyncLoop(){ clearInterval(syncTimer); syncTimer=setInterval(()=>{ if(backupState==='ok') syncFromFolder(); },45000); }
+function editingChip(c){ const e=c.editing; if(!e||!e.by||e.by===actor()) return ''; const mins=Math.round((Date.now()-new Date(e.at))/60000); if(mins>20) return ''; return `<span class="chip bad">Being edited by ${esc(e.by)} (${mins} min ago)</span>`; }
 function renderBackupUI(){
   const st=document.getElementById('backupStatus'), banner=document.getElementById('backupBanner'), btn=document.getElementById('backupBtn'); const hasCases=Object.keys(cases).length>0; if(!st) return;
   if(backupState==='ok'){ st.textContent='SharePoint backup ✓'+(lastBackupAt?' '+lastBackupAt.toLocaleTimeString():''); banner.hidden=true; if(btn) btn.textContent='Change backup folder…'; }
@@ -595,7 +631,7 @@ function renderBackupUI(){
   else { st.textContent=FSA_SUPPORTED?'SharePoint backup: not connected':''; banner.hidden=!(hasCases&&FSA_SUPPORTED); banner.className='banner'; if(!banner.hidden) banner.innerHTML='<b>Cases on this computer are not backed up to SharePoint yet.</b> Click <b>Connect SharePoint backup folder…</b> and choose the program\'s synced SharePoint folder; after that, every save is backed up automatically.'; }
 }
 function scheduleSave(){
-  setStatus('Saving…');
+  setStatus('Saving…'); lastInputAt=Date.now(); if(currentId) pendingIds.add(currentId);
   if(currentId){ const key=currentId+'|'+activeTab; if(!editLogged.has(key)){ editLogged.add(key); logAct(cases[currentId],'Edited '+(TABS.find(t=>t[0]===activeTab)||['','section'])[1]); } }
   clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ if(currentId) cases[currentId].updated=new Date().toISOString(); persist(); if(currentId){ refreshTabDots(); renderCaseHeader(); } },400);
 }
@@ -606,12 +642,14 @@ function scheduleSave(){
 function showView(v){
   document.getElementById('viewHome').hidden=v!=='home'; document.getElementById('viewCase').hidden=v!=='case'; document.getElementById('viewHelp').hidden=v!=='help';
   document.getElementById('navCases').classList.toggle('active',v!=='help'); document.getElementById('navHelp').classList.toggle('active',v==='help');
-  if(v==='home'){ currentId=null; renderHome(); }
+  if(v==='home'){ if(currentId&&cases[currentId]&&cases[currentId].editing&&cases[currentId].editing.by===actor()){ cases[currentId].editing=null; pendingIds.add(currentId); persist(); } currentId=null; renderHome(); }
 }
 function esc(s){ return (s===null||s===undefined)?'':String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 function caseChips(c){
   const d=derived(c), ch=[];
   ch.push(`<span class="chip ${d.status==='Active'?'ok':d.status==='Closed'?'':'info'}">${d.status}</span>`);
+  ch.push(editingChip(c));
+  if(c.p1.pid&&duplicatePids().has(c.p1.pid)) ch.push('<span class="chip bad">Duplicate ID: renumber</span>');
   if(d.initialOverdue) ch.push('<span class="chip bad">Initial contact overdue</span>');
   if(d.contactLapsed) ch.push(`<span class="chip warn">${d.daysSince===null?'No contact logged':d.daysSince+' days since contact'}</span>`);
   if(d.courtSoon) ch.push(`<span class="chip warn">Court ${fmtDate(d.nextCourt)}</span>`);
@@ -625,7 +663,7 @@ function renderHome(){
   const q=(document.getElementById('searchBox').value||'').toLowerCase(); const wrap=document.getElementById('caseTableWrap');
   const list=Object.entries(cases).filter(([id,c])=>!q||[c.p1.pid,c.p1.name,c.p1.prefName,c.p1.staff].join(' ').toLowerCase().includes(q)).sort((a,b)=>b[1].updated.localeCompare(a[1].updated));
   if(!list.length){ wrap.innerHTML='<div class="empty">No cases yet. Click <b>+ New Case</b> to begin.</div>'; updateCount(); renderBackupUI(); return; }
-  wrap.innerHTML=`<div class="tablewrap"><table><thead><tr><th></th><th>Participant ID</th><th>Name</th><th>Staff</th><th>Status</th><th>Last contact</th><th>Next court</th><th>Last edited</th><th></th></tr></thead><tbody>`+
+  wrap.innerHTML=`<div class="tablewrap"><table><thead><tr><th></th><th>Participant ID</th><th>Name</th><th>Staff</th><th>Status</th><th>Last contact</th><th>Next court</th><th>Last saved</th><th></th></tr></thead><tbody>`+
     list.map(([id,c])=>{ const d=derived(c); return `<tr>
       <td><input type="checkbox" ${c.selected?'checked':''} onchange="cases['${id}'].selected=this.checked;persist()" title="Include in export"></td>
       <td><b>${esc(c.p1.pid)||'<i>no ID</i>'}</b></td><td>${esc(c.p1.prefName||c.p1.name)}</td><td>${esc(c.p1.staff)}</td>
@@ -633,19 +671,20 @@ function renderHome(){
       <td>${new Date(c.updated).toLocaleString()}</td><td style="white-space:nowrap"><button class="btn small" onclick="openCase('${id}')">Open</button></td></tr>`; }).join('')+'</tbody></table></div>';
   updateCount(); renderBackupUI();
 }
-function newCase(){
+async function newCase(){
+  if(backupDir&&backupState==='ok'){ setStatus('Checking SharePoint for existing IDs…'); await syncFromFolder(); }
   const id='c'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36);
   cases[id]=blankCase(); cases[id].p1.pid=nextPid(); if(currentUser&&STAFF.includes(currentUser.name)) cases[id].p1.staff=currentUser.name;
   logAct(cases[id],'Case created'); persist(); openCase(id);
 }
-function openCase(id){ currentId=id; activeTab='p1'; logAct(cases[id],'Case opened'); showView('case'); renderCase(); }
-function deleteCase(){ const c=cases[currentId]; if(!confirm(`Delete case ${c.p1.pid||'(no ID)'}? This cannot be undone. Consider "Save case file" first.`)) return; delete cases[currentId]; persist(); showView('home'); }
+function openCase(id){ currentId=id; activeTab='p1'; const c=cases[id]; logAct(c,'Case opened'); c.editing={by:actor(),at:new Date().toISOString()}; pendingIds.add(id); persist(); showView('case'); renderCase(); }
+function deleteCase(){ const c=cases[currentId]; if(!confirm(`Delete case ${c.p1.pid||'(no ID)'}? This cannot be undone. Consider "Save case file" first.`)) return; const pid=c.p1.pid; delete cases[currentId]; markArchived(currentId,true); persist(); if(backupDir&&backupState==='ok'){ backupDir.removeEntry(`P2P_case_${safeName(pid||currentId)}.json`).catch(()=>{}); } showView('home'); }
 async function archiveCase(){
   const c=cases[currentId]; if(!c) return;
   if(backupState!=='ok'){ alert('Connect the SharePoint backup folder first. Archiving removes the case from this computer, so it must be safely backed up before it can be archived.'); return; }
   if(!confirm(`Archive case ${c.p1.pid||'(no ID)'}?\n\nIts backup file stays in the SharePoint folder with version history; the case is removed from this computer. Use "Load case file…" to bring it back.`)) return;
   logAct(c,'Archived off this device'); await backupToFolder(true); if(backupState!=='ok'){ alert('Backup did not succeed. The case was NOT removed.'); return; }
-  delete cases[currentId]; localStorage.setItem(STORE_KEY,JSON.stringify(cases)); updateCount(); showView('home');
+  markArchived(currentId,true); delete cases[currentId]; localStorage.setItem(STORE_KEY,JSON.stringify(cases)); updateCount(); showView('home');
 }
 function printCase(){ activeTab='sum'; renderCase(); setTimeout(()=>window.print(),300); }
 
@@ -663,7 +702,7 @@ function multiFld(part,key,label,opts,hint){
   const c=cases[currentId]; const cur=(part==='root'?c[key]:c[part][key])||[];
   return `<div><label class="f">${esc(label)}</label><div class="checks">`+opts.map(o=>`<label><input type="checkbox" ${cur.includes(o)?'checked':''} onchange="toggleMulti('${part}','${key}',${JSON.stringify(o).replace(/"/g,'&quot;')},this.checked)"> ${esc(o)}</label>`).join('')+`</div>${hint?`<div class="hint" style="margin:3px 0 0">${hint}</div>`:''}</div>`;
 }
-function setVal(part,key,value){ const c=cases[currentId]; if(part==='p1'&&key==='intakeDate'&&value&&!csbgComplete(c)){ alert('Complete the CSBG eligibility and characteristics section before recording the intake date. Missing: '+csbgMissing(c).join(', ')); renderTab(); return; } if(part==='root') c[key]=value; else c[part][key]=value; if(part==='p1'&&['hhSize','monthlyIncome','incomeSources'].includes(key)) scheduleSave(); scheduleSave(); }
+function setVal(part,key,value){ const c=cases[currentId]; if(part==='p8'&&key==='status'&&value&&!csbgComplete(c)){ logAct(c,'Closed with CSBG section incomplete: '+csbgMissing(c).join(', ')); } if(part==='root') c[key]=value; else c[part][key]=value; if(part==='p1'&&['hhSize','monthlyIncome','incomeSources'].includes(key)) scheduleSave(); scheduleSave(); }
 function toggleMulti(part,key,opt,on){ const c=cases[currentId]; const obj=part==='root'?c:c[part]; const arr=obj[key]||(obj[key]=[]); const i=arr.indexOf(opt); if(on&&i<0) arr.push(opt); if(!on&&i>=0) arr.splice(i,1); scheduleSave(); }
 /* Generic row list editor: getArr() returns the array; schema = [{k,l,t,o,w}] */
 function listEditor(id, arr, schema, addLabel, opts){
@@ -703,7 +742,7 @@ function tabIntake(c){
     <p class="hint">Initial contact is due within two business days of the inquiry${d.initialDue?` (by <b>${fmtDate(d.initialDue)}</b>)`:''}. If it could not be made, record the reason.</p>
     ${d.initialOverdue?'<div class="banner bad">Initial contact is overdue. Log the attempt or the reason below.</div>':''}
     <div class="grid c3">
-      ${fld('p1','pid','Participant ID','text',null,'Assigned automatically; the only identifier used outside this tool')}
+      ${fld('p1','pid','Participant ID','text',null,'Assigned automatically from your own sequence (letter = staff); the only identifier used outside this tool')}
       ${fld('p1','inquiryDate','Enrollment inquiry date','date')}
       ${fld('p1','referralSource','Referral source','select',REFERRAL_SOURCES)}
       ${fld('p1','referralContact','Referring contact (name, role)','text')}
@@ -719,7 +758,7 @@ function tabIntake(c){
     <div class="grid c3" style="margin-top:12px">
       ${fld('p1','initialContactDate','Initial contact completed','date')}
       ${fld('p1','initialContactReason','If not within two business days, reason','text')}
-      ${fld('p1','intakeDate','Intake completed (enrollment date)','date',null,csbgComplete(c)?'Sets the case to Active and starts the twelve-month new-arrest window':'Locked until the CSBG eligibility section below is complete')}
+      ${fld('p1','intakeDate','Intake completed (enrollment date)','date',null,'Sets the case to Active and starts the twelve-month new-arrest window')}
     </div></div>
   <div class="card"><h2>Participant profile</h2>
     <div class="grid c3">
@@ -730,8 +769,8 @@ function tabIntake(c){
       ${fld('p1','emergencyName','Emergency contact','text')}${fld('p1','emergencyPhone','Emergency contact phone','tel')}
     </div>
   </div>
-  <div class="card warnbox"><h2>CSBG eligibility and characteristics (required before enrollment)</h2>
-    <p class="hint">Required for the CSBG Annual Report (Module 4, Sections C and D) and for empowOR. The intake date and progress notes stay locked until every item here is complete. Record document types and dates only; never record ID numbers, Social Security numbers, or account numbers.</p>
+  <div class="card warnbox"><h2>CSBG eligibility and characteristics (required for CSBG reporting)</h2>
+    <p class="hint">Required for the CSBG Annual Report (Module 4, Sections C and D) and for empowOR. Complete it as documents come in; a case does not export to empowOR, and the case card keeps a CSBG incomplete flag, until every item here is complete. Record document types and dates only; never record ID numbers, Social Security numbers, or account numbers.</p>
     ${csbgComplete(c)?'<div class="callout" style="border-color:#bfe3c6;background:#e9f6ec">All CSBG items complete. FPL: <b>'+fplPct(c)+'%</b> ('+fplBand(fplPct(c))+') for a household of '+esc(c.p1.hhSize)+' against the '+FPL_YEAR+' guidelines.</div>':'<div class="banner">Still missing: '+csbgMissing(c).map(esc).join(', ')+'.</div>'}
     <h3>Identification</h3>
     <div class="grid c4">
@@ -866,7 +905,7 @@ function tabNotes(c){
     ${d.contactLapsed?'<div class="banner">Seven or more days without a substantive contact. Log the contact or the re-engagement attempt.</div>':''}
     <button class="btn" onclick="addNote()">+ New progress note</button></div>${cards}`;
 }
-function addNote(){ const c=cases[currentId]; if(!csbgComplete(c)){ alert('Progress notes open after the CSBG eligibility and characteristics section on the Intake tab is complete. Missing: '+csbgMissing(c).join(', ')); return; } c.p5.push({date:today(),staff:c.p1.staff||'',method:'',duration:'',phase:'Active case management',purpose:'',reported:'',verified:'',verifiedSource:'',legalChange:'',progress:'',barrier:'',action:'',commitment:'',followUp:'',goalsAddressed:[],services:['Case management'],outcomes:[],outcomeDate:'',outcomeSource:'',justiceComm:'',engagement:'',nextDate:'',nextMethod:'',nextFocus:''}); logAct(c,'Progress note added'); scheduleSave(); renderTab(); }
+function addNote(){ const c=cases[currentId]; c.p5.push({date:today(),staff:c.p1.staff||'',method:'',duration:'',phase:'Active case management',purpose:'',reported:'',verified:'',verifiedSource:'',legalChange:'',progress:'',barrier:'',action:'',commitment:'',followUp:'',goalsAddressed:[],services:['Case management'],outcomes:[],outcomeDate:'',outcomeSource:'',justiceComm:'',engagement:'',nextDate:'',nextMethod:'',nextFocus:''}); logAct(c,'Progress note added'); scheduleSave(); renderTab(); }
 function delNote(i){ if(!confirm('Remove this note?')) return; cases[currentId].p5.splice(i,1); scheduleSave(); renderTab(); }
 function noteToggle(i,k,opt,on){ const n=cases[currentId].p5[i]; const arr=n[k]||(n[k]=[]); const j=arr.indexOf(opt); if(on&&j<0) arr.push(opt); if(!on&&j>=0) arr.splice(j,1); scheduleSave(); }
 function tabRefs(c){
@@ -913,7 +952,7 @@ function tabClosure(c){
   const g=c.p8.gocpp; const enroll=c.p1.intakeDate; const arrestWindow=enroll?new Date(new Date(enroll).setFullYear(new Date(enroll).getFullYear()+1)).toISOString().slice(0,10):'';
   const rows=GOCPP.map(([k,l])=>{ const x=g[k]||(g[k]={}); const S=(f)=>`cases[currentId].p8.gocpp['${k}'].${f}=this.value;scheduleSave()`;
     return `<tr><td><b>${l}</b>${k==='newArrest'&&arrestWindow?`<div class="hint">Window ends ${fmtDate(arrestWindow)}</div>`:''}</td><td><select onchange="${S('yn')}">${['','Yes','No','Pending'].map(o=>`<option ${x.yn===o?'selected':''}>${o}</option>`).join('')}</select></td><td><input type="date" value="${esc(x.date)}" oninput="${S('date')}"></td><td><input type="text" value="${esc(x.src)}" oninput="${S('src')}" placeholder="Evidence source"></td></tr>`; }).join('');
-  return `<div class="card"><h2>GOCPP performance measures</h2><p class="hint">Each measure needs a date and an evidence source (employer letter, court record, provider confirmation, staff verification). Employment retention is checked at 30, 90, and 180 days from the placement date.</p>
+  return `<div class="card"><h2>GOCPP performance measures</h2><p class="hint">Each measure needs a date and an evidence source (employer letter, court record, provider confirmation, staff verification). Employment retention is checked at 30, 90, and 180 days from the placement date.</p>${csbgComplete(c)?'':'<div class="banner">CSBG eligibility and characteristics on the Intake tab are incomplete. The case can be closed, but it will not export to empowOR and the CSBG Annual Report will not count it until they are. Missing: '+csbgMissing(c).map(esc).join(', ')+'.</div>'}
     <div class="tablewrap"><table><thead><tr><th>Measure</th><th>Status</th><th>Date</th><th>Evidence source</th></tr></thead><tbody>${rows}</tbody></table></div></div>
   <div class="card"><h2>Case closure</h2>
     <div class="grid c3">${fld('p8','status','Closure status','select',CLOSURE)}${fld('p8','date','Closure date','date')}${fld('p8','finalNoteDate','Final note date','date')}</div>
