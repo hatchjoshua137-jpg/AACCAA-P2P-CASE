@@ -183,7 +183,7 @@
       <h3>Confidentiality</h3>
       <ul>
         <li>Participant ID only in file names, emails, and texts. Names stay inside this tool and the paper record.</li>
-        <li>No Social Security numbers, account numbers, or card numbers anywhere in the system.</li>
+        <li>No Social Security numbers, account numbers, or card numbers anywhere in the system, including as scanned documents.</li>
         <li>Behavioral health and substance use: record referral status and connection only, never clinical detail.</li>
         <li>Court and case information carries its source. Public case information is verified, not assumed.</li>
         <li>Lock your screen when you step away. Every action in a case is logged.</li>
@@ -636,6 +636,28 @@ function scheduleSave(){
   clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ if(currentId) cases[currentId].updated=new Date().toISOString(); persist(); if(currentId){ refreshTabDots(); renderCaseHeader(); } },400);
 }
 
+/* ---------- Case documents (stored in the SharePoint folder under docs/<Participant ID>/) ---------- */
+const DOC_TYPES = ['Identification (copy)', 'Income verification', 'Zero-income declaration', 'Authorization / release', 'Offer letter or employment verification', 'Court or supervision document', 'Diversion Plan (signed)', 'Correspondence (approved final)', 'Other'];
+async function docsDir(c, create){ if(!backupDir||backupState!=='ok') return null; const root=await backupDir.getDirectoryHandle('docs',{create:!!create}).catch(()=>null); if(!root) return null; return root.getDirectoryHandle(safeName(c.p1.pid||'unassigned'),{create:!!create}).catch(()=>null); }
+async function listDocs(c){ const dir=await docsDir(c,false); const out=[]; if(!dir) return out; for await (const e of dir.values()){ if(e.kind==='file'){ const f=await e.getFile(); out.push({name:e.name,size:f.size,modified:f.lastModified}); } } return out.sort((a,b)=>a.name.localeCompare(b.name)); }
+async function addDocs(ev){
+  const c=cases[currentId]; const files=[...ev.target.files]; ev.target.value=''; if(!files.length) return;
+  if(!backupDir||backupState!=='ok'){ alert('Connect the SharePoint backup folder first; documents are stored there, not on this laptop.'); return; }
+  const type=document.getElementById('docType').value||'Other';
+  const dir=await docsDir(c,true); if(!dir){ alert('Could not open the documents folder.'); return; }
+  for(const f of files){ if(f.size>25*1024*1024){ alert(f.name+' is larger than 25 MB; scan at a lower resolution.'); continue; }
+    const name=`${today()}_${safeName(type)}_${safeName(f.name)}`; const fh=await dir.getFileHandle(name,{create:true}); const w=await fh.createWritable(); await w.write(f); await w.close(); logAct(c,'Document added: '+type+' ('+name+')'); }
+  scheduleSave(); renderDocs();
+}
+async function openDoc(name){ const c=cases[currentId]; const dir=await docsDir(c,false); if(!dir) return; const fh=await dir.getFileHandle(name); const f=await fh.getFile(); const url=URL.createObjectURL(f); window.open(url,'_blank'); setTimeout(()=>URL.revokeObjectURL(url),60000); }
+async function deleteDoc(name){ if(!confirm('Remove '+name+' from the case documents? SharePoint keeps it in the recycle bin.')) return; const c=cases[currentId]; const dir=await docsDir(c,false); if(!dir) return; await dir.removeEntry(name); logAct(c,'Document removed: '+name); scheduleSave(); renderDocs(); }
+async function renderDocs(){ const el=document.getElementById('docList'); if(!el) return; const c=cases[currentId]; if(!backupDir||backupState!=='ok'){ el.innerHTML='<div class="hint">Connect the SharePoint backup folder to store and view documents.</div>'; return; } const docs=await listDocs(c);
+  el.innerHTML=docs.length?`<div class="tablewrap"><table><thead><tr><th>Document</th><th>Size</th><th>Added</th><th></th></tr></thead><tbody>`+docs.map(d=>`<tr><td>${esc(d.name)}</td><td>${Math.round(d.size/1024)} KB</td><td>${new Date(d.modified).toLocaleDateString()}</td><td style="white-space:nowrap"><button class="btn ghost small" onclick="openDoc(${JSON.stringify(d.name).replace(/"/g,'&quot;')})">Open</button> <button class="btn ghost small" onclick="deleteDoc(${JSON.stringify(d.name).replace(/"/g,'&quot;')})">Remove</button></td></tr>`).join('')+'</tbody></table></div>':'<div class="hint">No documents yet.</div>'; }
+function docsCard(){ return `<div class="card"><h2>Case documents</h2>
+    <p class="hint">Scans and PDFs are stored in the SharePoint folder under docs/${esc(cases[currentId].p1.pid||'unassigned')}/, never on this laptop, and are visible to everyone with folder access. Store ID copies, income verification, authorizations, offer letters, court documents, and approved correspondence. Do not upload Social Security cards or anything showing a full Social Security number; note the document type on the Intake tab instead.</p>
+    <div class="toolbar"><select id="docType" style="max-width:300px">${DOC_TYPES.map(t=>`<option>${t}</option>`).join('')}</select><label class="btn secondary" style="margin:0">Add document(s)… <input type="file" multiple hidden onchange="addDocs(event)"></label></div>
+    <div id="docList"><div class="hint">Loading…</div></div></div>`; }
+
 /* =====================================================================
    Views
    ===================================================================== */
@@ -734,7 +756,7 @@ function renderCase(){
 }
 function renderCaseHeader(){ const c=cases[currentId]; document.getElementById('caseTitle').textContent=(c.p1.pid||'New case')+(c.p1.prefName||c.p1.name?' · '+(c.p1.prefName||c.p1.name):''); document.getElementById('caseChips').innerHTML=caseChips(c); }
 function refreshTabDots(){ const c=cases[currentId]; TABS.forEach(([k])=>{ const el=document.querySelector(`#tab_${k} .dot`); if(el) el.className='dot'+(k!=='sum'&&tabDone(c,k)?' done':''); }); }
-function renderTab(){ const body=document.getElementById('tabBody'); const fn={p1:tabIntake,p2:tabAuth,p3:tabAssess,p4:tabPlan,p5:tabNotes,p6:tabRefs,p7:tabJustice,p8:tabClosure,p9:tabQA,sum:tabSummary}[activeTab]; body.innerHTML=fn(cases[currentId]); }
+function renderTab(){ const body=document.getElementById('tabBody'); const fn={p1:tabIntake,p2:tabAuth,p3:tabAssess,p4:tabPlan,p5:tabNotes,p6:tabRefs,p7:tabJustice,p8:tabClosure,p9:tabQA,sum:tabSummary}[activeTab]; body.innerHTML=fn(cases[currentId]); renderDocs(); }
 
 function tabIntake(c){
   const d=derived(c);
@@ -769,6 +791,7 @@ function tabIntake(c){
       ${fld('p1','emergencyName','Emergency contact','text')}${fld('p1','emergencyPhone','Emergency contact phone','tel')}
     </div>
   </div>
+  ${docsCard()}
   <div class="card warnbox"><h2>CSBG eligibility and characteristics (required for CSBG reporting)</h2>
     <p class="hint">Required for the CSBG Annual Report (Module 4, Sections C and D) and for empowOR. Complete it as documents come in; a case does not export to empowOR, and the case card keeps a CSBG incomplete flag, until every item here is complete. Record document types and dates only; never record ID numbers, Social Security numbers, or account numbers.</p>
     ${csbgComplete(c)?'<div class="callout" style="border-color:#bfe3c6;background:#e9f6ec">All CSBG items complete. FPL: <b>'+fplPct(c)+'%</b> ('+fplBand(fplPct(c))+') for a household of '+esc(c.p1.hhSize)+' against the '+FPL_YEAR+' guidelines.</div>':'<div class="banner">Still missing: '+csbgMissing(c).map(esc).join(', ')+'.</div>'}
@@ -989,6 +1012,7 @@ function tabSummary(c){
     <h3>Export this case</h3>
     <div class="toolbar"><button class="btn secondary small" onclick="exportCaseJSON()">Save case file (JSON)</button><button class="btn secondary small" onclick="cases[currentId].selected=true;persist();exportDashboard()">Dashboard row</button><button class="btn secondary small" onclick="cases[currentId].selected=true;persist();exportOutcomes()">Outcomes row</button></div>
     <h3>Case notes (free text, not exported)</h3>${fld('root','notes','','textarea')}
+  </div>${docsCard()}<div class="card">
     <h3>Activity log</h3><div class="log">${(c.log||[]).slice().reverse().map(e=>`${new Date(e.t).toLocaleString()} · ${esc(e.u)} · ${esc(e.a)}`).join('<br>')||'No activity yet.'}</div>
   </div>`;
 }
